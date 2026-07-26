@@ -15,6 +15,37 @@ decades.
 Team cards at the top show each club's current record and next game, so the
 picker doubles as a "what's on today" strip. Times are shown in Chicago time.
 
+## Stadiums
+
+Hover (or tab to) any Chicago venue name — in the controls bar, or on a home
+game in the schedule — and the ground it stands on turns underneath it, next to
+a note on when it opened and what happened there.
+
+The view is a USGS aerial, straight down. That choice is doing real work:
+spinning a flat photo normally reads as a spinning postcard, but from directly
+overhead a rotation is a genuine one, so the picture turns the way the ground
+would. Each aerial is framed wide enough to keep the building in the middle 70%,
+because a square has to be at least its own diagonal to cover a square window at
+every angle — otherwise the corners sweep into view mid-turn.
+
+The imagery is a work of the US federal government and so public domain. It is
+bundled at build time (`src/assets/venues/`, ~110 kB for all four) rather than
+requested at runtime, which keeps ESPN the app's only network dependency.
+Escape closes the card; `prefers-reduced-motion` holds the aerial still, north
+up.
+
+The four buildings and their history are the one part of the app that isn't
+fetched — ESPN gives a venue name and little else, so `src/venues.js` carries the
+rest. Former names are listed there too, which is how a 2004 schedule still
+resolves "U.S. Cellular Field" to the right building.
+
+The whole thing is styled as an arcade cabinet: bitmap type (Press Start 2P for
+chrome, Silkscreen for data), square corners, hard offset shadows instead of
+blur, nearest-neighbour logo scaling, and a CRT scanline wash over the page.
+Both fonts are bundled via `@fontsource` rather than pulled from a CDN, so the
+look holds up offline. Animations are stepped, and drop out entirely under
+`prefers-reduced-motion`.
+
 ## Running it
 
 ```bash
@@ -33,7 +64,7 @@ ESPN's public (undocumented, unauthenticated) endpoints:
 | Team profile, record, next game | `site.api.espn.com/apis/site/v2/sports/{sport}/{league}/teams/{id}` |
 | Schedule | `…/teams/{id}/schedule?season={year}&seasontype={1,2,3}` |
 | Roster | `…/teams/{id}/roster?season={year}` |
-| Team statistics | `site.web.api.espn.com/apis/common/v3/sports/{sport}/{league}/teams/{id}/statistics?season={year}` |
+| Team statistics | `sports.core.api.espn.com/v2/sports/{sport}/leagues/{league}/seasons/{year}/types/2/teams/{id}/statistics` |
 | Standings | `site.api.espn.com/apis/v2/sports/{sport}/{league}/standings?season={year}&level=3` |
 
 No API key, no account, no rate-limit paperwork — but also no service
@@ -73,10 +104,12 @@ src/
   api.js         fetch client — same-origin proxy, direct fallback, request cache
   espn.js        normalizers for the payload shapes (they vary by league and era)
   teams.js       the five clubs: ESPN ids, colours, venues, season ranges
+  venues.js      the four buildings and their history
+  assets/venues/ USGS aerials, one per building, bundled at build time
   seasons.js     season numbering, current-season logic, dropdown options
   format.js      dates and times, all in America/Chicago
   useAsync.js    loading / error / data hook
-  components/    TeamPicker, Schedule, Roster, TeamStats, Standings, ui
+  components/    TeamPicker, Schedule, Roster, TeamStats, Standings, Venue, ui
 test/
   normalize.test.mjs
 ```

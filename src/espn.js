@@ -170,16 +170,32 @@ export function statCategories(payload) {
   return found
     .map((c) => ({
       name: c.displayName ?? c.name ?? 'Stats',
-      stats: (c.stats ?? [])
-        .map((s) => ({
-          label: s.displayName ?? s.shortDisplayName ?? s.name,
-          value: first(s.displayValue, s.value),
-          perGame: s.perGameDisplayValue ?? null,
-          rank: s.rankDisplayValue ?? (s.rank ? `#${s.rank}` : null),
-        }))
-        .filter((s) => s.label && s.value !== undefined && s.value !== null),
+      stats: uniqueKeys(
+        (c.stats ?? [])
+          .map((s, i) => ({
+            // Display names repeat inside a category — the NFL `general` group
+            // lists three distinct "Fumbles Touchdowns" stats — so key on the
+            // machine name, which ESPN does keep unique.
+            key: s.name ?? s.abbreviation ?? `stat-${i}`,
+            label: s.displayName ?? s.shortDisplayName ?? s.name,
+            value: first(s.displayValue, s.value),
+            perGame: s.perGameDisplayValue ?? null,
+            rank: s.rankDisplayValue ?? (s.rank ? `#${s.rank}` : null),
+          }))
+          .filter((s) => s.label && s.value !== undefined && s.value !== null),
+      ),
     }))
     .filter((c) => c.stats.length > 0)
+}
+
+/** Belt and braces: ESPN could repeat a machine name too, and React can't. */
+function uniqueKeys(stats) {
+  const seen = new Map()
+  return stats.map((s) => {
+    const n = (seen.get(s.key) ?? 0) + 1
+    seen.set(s.key, n)
+    return n === 1 ? s : { ...s, key: `${s.key}-${n}` }
+  })
 }
 
 function findCategories(node, depth) {

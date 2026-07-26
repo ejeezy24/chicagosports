@@ -1,4 +1,4 @@
-import { TEAMS } from '../teams.js'
+import { TEAMS, accentFor } from '../teams.js'
 import { formatDate, formatTime } from '../format.js'
 
 /**
@@ -14,7 +14,7 @@ export function TeamPicker({ selected, onSelect, overview }) {
           <button
             key={team.key}
             className="team-card"
-            style={{ '--card-color': team.color === '#27251F' ? team.accent : team.color }}
+            style={{ '--card-color': accentFor(team) }}
             aria-pressed={selected === team.key}
             onClick={() => onSelect(team.key)}
           >

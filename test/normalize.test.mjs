@@ -15,7 +15,11 @@ import {
   standingsGroups,
 } from '../src/espn.js'
 import { currentSeasonFor, seasonLabel, seasonOptions, clampSeason } from '../src/seasons.js'
-import { TEAMS, teamByKey } from '../src/teams.js'
+import { BACKDROP, TEAMS, accentFor, teamByKey } from '../src/teams.js'
+import { readdir, stat } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { IMAGERY_CREDIT, VENUES, venueByName } from '../src/venues.js'
 
 const cubs = teamByKey('cubs')
 const bulls = teamByKey('bulls')
@@ -247,6 +251,31 @@ test('stats are also found under splits', () => {
   assert.equal(cats[0].stats[0].value, 41)
 })
 
+test('stats repeating a display name still get distinct keys', () => {
+  const cats = statCategories({
+    splits: {
+      categories: [
+        {
+          name: 'general',
+          stats: [
+            { name: 'fumblesTouchdowns', displayName: 'Fumbles Touchdowns', value: 0 },
+            { name: 'offensiveFumblesTouchdowns', displayName: 'Fumbles Touchdowns', value: 0 },
+            { name: 'defensiveFumblesTouchdowns', displayName: 'Fumbles Touchdowns', value: 0 },
+            // no machine name to fall back on, and a name ESPN already used
+            { displayName: 'Fumbles Touchdowns', value: 0 },
+            { name: 'fumblesTouchdowns', displayName: 'Fumbles Touchdowns', value: 0 },
+          ],
+        },
+      ],
+    },
+  })
+
+  const keys = cats[0].stats.map((s) => s.key)
+  assert.equal(keys.length, 5)
+  assert.equal(new Set(keys).size, 5)
+  assert.equal(cats[0].stats.every((s) => s.label === 'Fumbles Touchdowns'), true)
+})
+
 test('missing stats degrade to an empty list rather than throwing', () => {
   assert.deepEqual(statCategories(null), [])
   assert.deepEqual(statCategories({}), [])
@@ -339,4 +368,79 @@ test('every team is configured with what the endpoints need', () => {
     assert.ok(t.modernFrom >= t.oldestSeason)
   }
   assert.equal(teamByKey('nope').key, 'cubs') // unknown keys fall back
+})
+
+test('every club plays somewhere the venue data knows about', () => {
+  for (const t of TEAMS) {
+    const venue = venueByName(t.venue)
+    assert.ok(venue, `${t.key} venue "${t.venue}" has no entry in venues.js`)
+    assert.ok(venue.teams.includes(t.key), `${venue.key} does not list ${t.key}`)
+  }
+  // Two clubs, one building.
+  assert.equal(venueByName('United Center').teams.length, 2)
+})
+
+test('venue lookup handles former names and unknown grounds', () => {
+  assert.equal(venueByName('Guaranteed Rate Field').key, 'rate')
+  assert.equal(venueByName('U.S. Cellular Field').key, 'rate')
+  assert.equal(venueByName('  wrigley field  ').key, 'wrigley') // trimmed, case-insensitive
+  assert.equal(venueByName('Fenway Park'), null)
+  assert.equal(venueByName(undefined), null)
+})
+
+test('every venue has the card copy the popover renders', () => {
+  for (const v of VENUES) {
+    assert.ok(v.facts.length > 0, `${v.key} should have some history`)
+    assert.ok(v.blurb && v.opened && v.capacity, `${v.key} is missing card copy`)
+    assert.ok(v.neighbourhood, `${v.key} is missing a neighbourhood`)
+  }
+})
+
+test('every venue has a bundled aerial on disk', async () => {
+  // Venue.jsx imports these by key. Node can't import a .jpg, so the check is
+  // that the file each import points at exists and holds a real image — a
+  // truncated or missing one would only surface as a broken <img> in the UI.
+  const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'assets', 'venues')
+
+  for (const v of VENUES) {
+    const info = await stat(join(dir, `${v.key}.jpg`))
+    assert.ok(info.size > 5000, `${v.key}.jpg looks empty or truncated`)
+  }
+
+  // No orphans: an aerial with no venue means a rename went half-done.
+  const onDisk = (await readdir(dir)).filter((f) => f.endsWith('.jpg')).sort()
+  assert.deepEqual(onDisk, VENUES.map((v) => `${v.key}.jpg`).sort())
+})
+
+test('imagery is credited', () => {
+  assert.match(IMAGERY_CREDIT, /USGS/)
+  assert.match(IMAGERY_CREDIT, /public domain/i)
+})
+
+test('every club accent stays legible on the page background', () => {
+  const channel = (s) => (s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4)
+  const luminance = (hex) => {
+    const [r, g, b] = [1, 3, 5].map((i) => channel(parseInt(hex.slice(i, i + 2), 16) / 255))
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+  }
+  const ratio = (a, b) => {
+    const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x)
+    return (hi + 0.05) / (lo + 0.05)
+  }
+
+  // Both the shipped paper backdrop and a hypothetical dark one, so the
+  // correction is exercised in each direction.
+  for (const backdrop of [BACKDROP, '#0b0b18']) {
+    for (const t of TEAMS) {
+      const accent = accentFor(t, backdrop)
+      assert.match(accent, /^#[0-9a-f]{6}$/, `${t.key} accent should be a hex colour`)
+      const c = ratio(accent, backdrop)
+      // 3:1 is the WCAG AA floor for large / bold text, which is all this
+      // colour is used for — headings, the masthead, and thin rules.
+      assert.ok(
+        c >= 3,
+        `${t.key} accent ${accent} only reaches ${c.toFixed(2)}:1 on ${backdrop}`,
+      )
+    }
+  }
 })

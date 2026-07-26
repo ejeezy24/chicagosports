@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getTeam } from './api.js'
-import { TEAMS, teamByKey } from './teams.js'
+import { TEAMS, accentFor, teamByKey } from './teams.js'
 import { clampSeason, currentSeasonFor, seasonLabel, seasonOptions } from './seasons.js'
 import { useAsync } from './useAsync.js'
 import { Schedule } from './components/Schedule.jsx'
@@ -8,6 +8,7 @@ import { Roster } from './components/Roster.jsx'
 import { TeamStats } from './components/TeamStats.jsx'
 import { Standings } from './components/Standings.jsx'
 import { TeamPicker, summarizeTeam } from './components/TeamPicker.jsx'
+import { Venue } from './components/Venue.jsx'
 
 const TABS = [
   { id: 'schedule', label: 'Schedule & scores' },
@@ -71,7 +72,7 @@ export default function App() {
     [],
   )
 
-  const accent = team.color === '#27251F' ? team.accent : team.color
+  const accent = accentFor(team)
 
   return (
     <div className="app" style={{ '--team': accent }}>
@@ -118,7 +119,9 @@ export default function App() {
         <div className="spacer" />
 
         <div className="field">
-          <span className="tc-league">{team.venue}</span>
+          <span className="tc-league">
+            <Venue name={team.venue} />
+          </span>
         </div>
       </div>
 

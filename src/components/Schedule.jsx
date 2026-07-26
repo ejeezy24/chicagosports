@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { getSchedule } from '../api.js'
 import { scheduleEvents, recordFromGames } from '../espn.js'
 import { formatDate, formatTime, isSameDay, monthKey } from '../format.js'
 import { seasonLabel } from '../seasons.js'
 import { useAsync } from '../useAsync.js'
 import { Async, Panel } from './ui.jsx'
+import { Venue } from './Venue.jsx'
 
 export function Schedule({ team, season }) {
   const [seasonType, setSeasonType] = useState(2)
@@ -96,14 +97,14 @@ export function Schedule({ team, season }) {
 }
 
 function GameRow({ game }) {
+  // Kept as parts rather than a joined string so the venue can carry its own
+  // hover card; away grounds fall back to plain text inside <Venue>.
   const sub = [
     game.week ? `Week ${game.week}` : null,
     game.note,
-    game.venue,
+    game.venue ? <Venue key="venue" name={game.venue} /> : null,
     game.broadcast,
-  ]
-    .filter(Boolean)
-    .join(' · ')
+  ].filter(Boolean)
 
   return (
     <div className={`game${isSameDay(game.date) ? ' today' : ''}`}>
@@ -123,7 +124,16 @@ function GameRow({ game }) {
           <span style={{ color: 'var(--dim)' }}>{game.home ? 'vs' : '@'}</span>{' '}
           {game.opponent.name}
         </div>
-        {sub ? <div className="sub">{sub}</div> : null}
+        {sub.length ? (
+          <div className="sub">
+            {sub.map((part, i) => (
+              <Fragment key={i}>
+                {i ? ' · ' : null}
+                {part}
+              </Fragment>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div className="g-result">

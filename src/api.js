@@ -109,12 +109,17 @@ export function getRoster(team, season) {
   return request('site', `${leaguePath(team)}/teams/${team.espnId}/roster`, { season })
 }
 
-/** Season team statistics (totals, per-game, league ranks). */
-export function getTeamStats(team, season) {
+/**
+ * Season team statistics (totals, per-game, league ranks).
+ *
+ * The `site.web.api` `/apis/common/v3/…/teams/{id}/statistics` path this used to
+ * call now answers 404 for every league. The core API carries the same numbers,
+ * but keys the season type in the path rather than a query parameter.
+ */
+export function getTeamStats(team, season, seasonType = 2) {
   return request(
-    'web',
-    `/apis/common/v3/sports/${team.sport}/${team.league}/teams/${team.espnId}/statistics`,
-    { season },
+    'core',
+    `/v2/sports/${team.sport}/leagues/${team.league}/seasons/${season}/types/${seasonType}/teams/${team.espnId}/statistics`,
   )
 }
 

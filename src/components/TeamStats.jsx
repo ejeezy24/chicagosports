@@ -25,7 +25,7 @@ export function TeamStats({ team, season }) {
               <div className="stat-group" key={cat.name}>
                 <h3>{cat.name}</h3>
                 {cat.stats.map((s) => (
-                  <div className="stat-row" key={s.label}>
+                  <div className="stat-row" key={s.key}>
                     <div className="lbl" title={s.label}>
                       {s.label}
                     </div>
