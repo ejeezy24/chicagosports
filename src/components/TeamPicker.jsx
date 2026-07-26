@@ -25,7 +25,9 @@ export function TeamPicker({ selected, onSelect, overview }) {
                 <div className="tc-league">{team.leagueLabel}</div>
               </div>
             </div>
-            <div className="tc-meta">{info?.record ?? ' '}</div>
+            {/* Fall back to something stable so a failed overview fetch leaves
+                a labelled card rather than an empty box. */}
+            <div className="tc-meta">{info?.record ?? team.venue}</div>
             <div className="tc-next">{info?.next ?? ' '}</div>
           </button>
         )

@@ -65,9 +65,18 @@ async function request(hostKey, path, params) {
   const pending = (async () => {
     try {
       return await fetchJson(host.prefix + url)
-    } catch (err) {
-      if (err instanceof ApiError && err.status && err.status >= 500) throw err
-      return await fetchJson(host.direct + url)
+    } catch (proxyError) {
+      // Any failure here is worth a second opinion: a 404 can mean the rewrite
+      // isn't configured rather than "no such season", and a 502/504 means the
+      // proxy itself couldn't reach ESPN — the case where going direct helps
+      // most. The direct attempt is authoritative, so its error is the one
+      // worth surfacing, but keep the proxy's around for debugging.
+      try {
+        return await fetchJson(host.direct + url)
+      } catch (directError) {
+        directError.proxyError = proxyError
+        throw directError
+      }
     }
   })()
 
