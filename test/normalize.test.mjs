@@ -13,6 +13,8 @@ import {
   rosterCoach,
   statCategories,
   standingsGroups,
+  boxscore,
+  periodLabels,
 } from '../src/espn.js'
 import { currentSeasonFor, seasonLabel, seasonOptions, clampSeason } from '../src/seasons.js'
 import { BACKDROP, TEAMS, accentFor, teamByKey } from '../src/teams.js'
@@ -280,6 +282,237 @@ test('missing stats degrade to an empty list rather than throwing', () => {
   assert.deepEqual(statCategories(null), [])
   assert.deepEqual(statCategories({}), [])
   assert.deepEqual(statCategories({ results: {} }), [])
+})
+
+test('period labels follow each sport past regulation', () => {
+  // Baseball just numbers innings, however many there are.
+  assert.deepEqual(periodLabels('baseball', 10).slice(-2), ['9', '10'])
+  assert.deepEqual(periodLabels('football', 5), ['1', '2', '3', '4', 'OT'])
+  assert.deepEqual(periodLabels('basketball', 6).slice(-2), ['OT', '2OT'])
+  // Hockey's second extra column is a shootout, not a second overtime.
+  assert.deepEqual(periodLabels('hockey', 5), ['1', '2', '3', 'OT', 'SO'])
+})
+
+test('a baseball boxscore keeps runs, hits and errors', () => {
+  const box = boxscore(
+    {
+      header: {
+        competitions: [
+          {
+            competitors: [
+              {
+                homeAway: 'home',
+                team: { id: '16', abbreviation: 'CHC', shortDisplayName: 'Cubs' },
+                score: 2,
+                hits: 6,
+                errors: 1,
+                winner: true,
+                linescores: [{ displayValue: '0' }, { displayValue: '2' }],
+              },
+              {
+                homeAway: 'away',
+                team: { id: '30', abbreviation: 'TB', shortDisplayName: 'Rays' },
+                score: 1,
+                hits: 4,
+                errors: 0,
+                linescores: [{ displayValue: '1' }, { displayValue: '0' }],
+              },
+            ],
+          },
+        ],
+      },
+      boxscore: {
+        teams: [
+          {
+            team: { id: '16' },
+            statistics: [
+              { name: 'batting', displayName: 'Batting', stats: [{ name: 'hits', displayName: 'Hits', displayValue: '6' }] },
+              { name: 'records', displayName: 'Records', stats: [{ name: 'overall', displayName: 'Overall', displayValue: '59-46' }] },
+            ],
+          },
+          {
+            team: { id: '30' },
+            statistics: [
+              { name: 'batting', displayName: 'Batting', stats: [{ name: 'hits', displayName: 'Hits', displayValue: '4' }] },
+              { name: 'records', displayName: 'Records', stats: [{ name: 'overall', displayName: 'Overall', displayValue: '61-43' }] },
+            ],
+          },
+        ],
+      },
+      gameInfo: { venue: { fullName: 'Tropicana Field' }, attendance: 21377, gameDuration: '2:47' },
+    },
+    '16',
+    'baseball',
+  )
+
+  assert.equal(box.hasHitsErrors, true)
+  assert.deepEqual(box.periodLabels, ['1', '2'])
+
+  // Away team is printed first, whichever side Chicago is on.
+  assert.equal(box.rows[0].abbr, 'TB')
+  assert.equal(box.rows[1].isUs, true)
+  assert.equal(box.rows[1].hits, 6)
+  assert.equal(box.rows[1].winner, true)
+
+  // Stats are paired against the opponent, and the season record is not a
+  // game stat so it does not belong in a boxscore.
+  assert.deepEqual(box.statGroups.map((g) => g.name), ['Batting'])
+  assert.deepEqual(box.statGroups[0].stats[0], {
+    key: 'hits',
+    label: 'Hits',
+    us: '6',
+    them: '4',
+  })
+
+  assert.equal(box.info.attendance, '21,377')
+  assert.equal(box.info.duration, '2:47')
+})
+
+test('a flat-stat boxscore pairs up and skips hits/errors', () => {
+  const box = boxscore(
+    {
+      header: {
+        competitions: [
+          {
+            competitors: [
+              {
+                homeAway: 'away',
+                team: { id: '3', abbreviation: 'CHI' },
+                score: 26,
+                linescores: [{ value: 3 }, { value: 17 }, { value: 3 }, { value: 3 }],
+              },
+              {
+                homeAway: 'home',
+                team: { id: '12', abbreviation: 'KC' },
+                score: 20,
+                linescores: [{ value: 7 }, { value: 3 }, { value: 3 }, { value: 7 }],
+              },
+            ],
+          },
+        ],
+      },
+      boxscore: {
+        teams: [
+          { team: { id: '3' }, statistics: [{ name: 'firstDowns', label: '1st Downs', displayValue: '16' }] },
+          { team: { id: '12' }, statistics: [{ name: 'firstDowns', label: '1st Downs', displayValue: '21' }] },
+        ],
+      },
+    },
+    '3',
+    'football',
+  )
+
+  assert.equal(box.hasHitsErrors, false)
+  assert.deepEqual(box.periodLabels, ['1', '2', '3', '4'])
+  assert.deepEqual(box.rows[0].scores, ['3', '17', '3', '3'])
+  // Flat leagues get a single unnamed group.
+  assert.deepEqual(box.statGroups.map((g) => g.name), ['Team stats'])
+  assert.deepEqual(box.statGroups[0].stats[0].us, '16')
+  assert.deepEqual(box.statGroups[0].stats[0].them, '21')
+})
+
+test('boxscores survive a thin or mismatched payload', () => {
+  assert.equal(boxscore(null, '16', 'baseball'), null)
+  assert.equal(boxscore({}, '16', 'baseball'), null)
+
+  // Ragged line scores shouldn't produce holes: a team missing a period gets a
+  // placeholder rather than undefined.
+  const box = boxscore(
+    {
+      header: {
+        competitions: [
+          {
+            competitors: [
+              { homeAway: 'home', team: { id: '16' }, score: 1, linescores: [{ value: 1 }, { value: 0 }] },
+              { homeAway: 'away', team: { id: '30' }, score: 0, linescores: [{ value: 0 }] },
+            ],
+          },
+        ],
+      },
+    },
+    '16',
+    'baseball',
+  )
+  assert.equal(box.periodLabels.length, 2)
+  assert.deepEqual(box.rows[0].scores, ['0', '—'])
+  assert.deepEqual(box.statGroups, []) // no boxscore.teams at all
+  assert.equal(box.info, null)
+})
+
+test('boxscore stats repeating a machine name still get distinct keys', () => {
+  // Football reports interceptions thrown and interceptions caught under the
+  // same `name`, which React cannot key on.
+  const box = boxscore(
+    {
+      header: {
+        competitions: [
+          { competitors: [{ homeAway: 'home', team: { id: '3' }, score: 21 }, { homeAway: 'away', team: { id: '8' }, score: 52 }] },
+        ],
+      },
+      boxscore: {
+        teams: [
+          {
+            team: { id: '3' },
+            statistics: [
+              { name: 'interceptions', label: 'Interceptions', displayValue: '1' },
+              { name: 'interceptions', label: 'Interceptions thrown', displayValue: '2' },
+            ],
+          },
+          {
+            team: { id: '8' },
+            statistics: [
+              { name: 'interceptions', label: 'Interceptions', displayValue: '2' },
+              { name: 'interceptions', label: 'Interceptions thrown', displayValue: '1' },
+            ],
+          },
+        ],
+      },
+    },
+    '3',
+    'football',
+  )
+
+  const keys = box.statGroups[0].stats.map((s) => s.key)
+  assert.equal(keys.length, 2)
+  assert.equal(new Set(keys).size, 2, 'duplicate keys would drop a row')
+})
+
+test('mismatched stat order does not pair the wrong numbers together', () => {
+  // If the opponent's stats arrive in a different order, an index-based pairing
+  // would silently report another statistic's value as theirs.
+  const box = boxscore(
+    {
+      header: {
+        competitions: [
+          { competitors: [{ homeAway: 'home', team: { id: '4' }, score: 3 }, { homeAway: 'away', team: { id: '9' }, score: 2 }] },
+        ],
+      },
+      boxscore: {
+        teams: [
+          {
+            team: { id: '4' },
+            statistics: [
+              { name: 'hits', label: 'Hits', displayValue: '26' },
+              { name: 'takeaways', label: 'Takeaways', displayValue: '2' },
+            ],
+          },
+          {
+            team: { id: '9' },
+            statistics: [
+              { name: 'takeaways', label: 'Takeaways', displayValue: '9' },
+              { name: 'hits', label: 'Hits', displayValue: '18' },
+            ],
+          },
+        ],
+      },
+    },
+    '4',
+    'hockey',
+  )
+
+  const hits = box.statGroups[0].stats.find((s) => s.label === 'Hits')
+  assert.equal(hits.us, '26')
+  assert.equal(hits.them, null, 'better to show nothing than the wrong statistic')
 })
 
 test('standings flatten out of the conference/division tree', () => {

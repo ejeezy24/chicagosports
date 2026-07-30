@@ -6,6 +6,8 @@ decades.
 
 - **Schedule & scores** — every game for the chosen season with results, scores,
   venue, broadcast, and a running record; preseason / regular / postseason toggle.
+- **Boxscores** — expand any played game for the line score by inning, quarter or
+  period, both teams' statistics side by side, and the attendance footer.
 - **Roster** — players grouped by position with number, height, weight, age,
   college, and birthplace, plus a filter box.
 - **Team stats** — season totals, per-game averages, and league ranks.
@@ -65,6 +67,7 @@ ESPN's public (undocumented, unauthenticated) endpoints:
 | Schedule | `…/teams/{id}/schedule?season={year}&seasontype={1,2,3}` |
 | Roster | `…/teams/{id}/roster?season={year}` |
 | Team statistics | `sports.core.api.espn.com/v2/sports/{sport}/leagues/{league}/seasons/{year}/types/2/teams/{id}/statistics` |
+| Boxscore | `…/{sport}/{league}/summary?event={gameId}` |
 | Standings | `site.api.espn.com/apis/v2/sports/{sport}/{league}/standings?season={year}&level=3` |
 
 No API key, no account, no rate-limit paperwork — but also no service
@@ -109,7 +112,8 @@ src/
   seasons.js     season numbering, current-season logic, dropdown options
   format.js      dates and times, all in America/Chicago
   useAsync.js    loading / error / data hook
-  components/    TeamPicker, Schedule, Roster, TeamStats, Standings, Venue, ui
+  components/    TeamPicker, Schedule, Boxscore, Roster, TeamStats, Standings,
+                 Venue, ui
 test/
   normalize.test.mjs
 ```

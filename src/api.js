@@ -123,6 +123,15 @@ export function getTeamStats(team, season, seasonType = 2) {
   )
 }
 
+/**
+ * One game in full: line score by inning/quarter/period, team statistics, and
+ * the attendance-and-officials footer. Same endpoint for every league, though
+ * the shape inside differs — see `boxscore()` in espn.js.
+ */
+export function getSummary(team, eventId) {
+  return request('site', `${leaguePath(team)}/summary`, { event: eventId })
+}
+
 /** League standings for a season, division level. */
 export function getStandings(team, season) {
   return request('site', `/apis/v2/sports/${team.sport}/${team.league}/standings`, {

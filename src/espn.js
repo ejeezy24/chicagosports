@@ -216,6 +216,136 @@ function findCategories(node, depth) {
 }
 
 /**
+ * How many periods a game is supposed to last, per sport. Baseball is open
+ * ended — nine innings unless it isn't — so it just numbers whatever it gets.
+ */
+const REGULATION = { football: 4, basketball: 4, hockey: 3 }
+
+/**
+ * Column headings for a line score: numbered through regulation, then overtime.
+ * Hockey's second extra column is a shootout rather than a second overtime.
+ */
+export function periodLabels(sport, count) {
+  const regulation = REGULATION[sport]
+  if (!regulation) return Array.from({ length: count }, (_, i) => String(i + 1))
+
+  return Array.from({ length: count }, (_, i) => {
+    if (i < regulation) return String(i + 1)
+    const extra = i - regulation + 1
+    if (sport === 'hockey') return extra === 1 ? 'OT' : 'SO'
+    return extra === 1 ? 'OT' : `${extra}OT`
+  })
+}
+
+/**
+ * One game in full.
+ *
+ * The two halves of this come from different places and in different shapes:
+ * the line score hangs off `header.competitions[0].competitors`, while team
+ * statistics live under `boxscore.teams` — flat for football, basketball and
+ * hockey, but grouped into batting/pitching/fielding for baseball. Stat items
+ * label themselves `label` in some leagues and `displayName` in others.
+ *
+ * Stats come back paired against the Chicago club so the UI can show them
+ * side by side without knowing which competitor is which.
+ */
+export function boxscore(payload, espnTeamId, sport) {
+  const comp = payload?.header?.competitions?.[0] ?? {}
+  const competitors = comp.competitors ?? []
+  if (competitors.length === 0) return null
+
+  const us = competitors.find((c) => String(c.team?.id) === String(espnTeamId)) ?? competitors[0]
+  const them = competitors.find((c) => c !== us) ?? null
+
+  // Away team on top, the way a boxscore is always printed.
+  const ordered = [...competitors].sort((a, b) => (a.homeAway === 'home' ? 1 : -1))
+
+  const periods = Math.max(0, ...competitors.map((c) => (c.linescores ?? []).length))
+  // Hits and errors are a baseball thing; the column only appears if ESPN sent it.
+  const hasHitsErrors = competitors.some((c) => c.hits !== undefined || c.errors !== undefined)
+
+  const rows = ordered.map((c) => ({
+    id: c.team?.id ?? c.id ?? null,
+    name: c.team?.shortDisplayName ?? c.team?.displayName ?? 'Unknown',
+    abbr: c.team?.abbreviation ?? '',
+    logo: logoOf(c.team),
+    isUs: c === us,
+    winner: c.winner === true,
+    scores: Array.from({ length: periods }, (_, i) => {
+      const cell = (c.linescores ?? [])[i]
+      if (!cell) return '—'
+      return String(first(cell.displayValue, cell.value) ?? '—')
+    }),
+    total: scoreOf(c) ?? '—',
+    hits: c.hits ?? null,
+    errors: c.errors ?? null,
+  }))
+
+  return {
+    periodLabels: periodLabels(sport, periods),
+    rows,
+    hasHitsErrors,
+    statGroups: pairStats(payload?.boxscore?.teams ?? [], us, them),
+    info: gameInfo(payload?.gameInfo),
+  }
+}
+
+const statLabel = (s) => s.label ?? s.displayName ?? s.shortDisplayName ?? s.name
+
+/** Line up each team's statistics against the other's, keeping ESPN's order. */
+function pairStats(teams, us, them) {
+  const ourStats = teams.find((t) => String(t.team?.id) === String(us?.team?.id))
+  const theirStats = teams.find((t) => t !== ourStats) ?? null
+  if (!ourStats) return []
+
+  // Baseball nests its stats one level deeper than everyone else.
+  const groupsOf = (side) => {
+    const stats = side?.statistics ?? []
+    const grouped = stats.length > 0 && Array.isArray(stats[0]?.stats)
+    return grouped
+      ? stats.map((g) => ({ name: g.displayName ?? titleCase(g.name ?? ''), stats: g.stats ?? [] }))
+      : [{ name: 'Team stats', stats }]
+  }
+
+  const ours = groupsOf(ourStats)
+  const theirs = groupsOf(theirStats)
+
+  return ours
+    .filter((g) => g.name.toLowerCase() !== 'records') // season record, not a game stat
+    .map((group, i) => ({
+      name: group.name,
+      // Machine names repeat here too — football reports both interceptions
+      // thrown and interceptions caught as `interceptions`.
+      stats: uniqueKeys(
+        group.stats
+        .map((s, j) => {
+          const mirror = theirs[i]?.stats?.[j]
+          // Only trust the mirrored index if it is the same statistic.
+          const opponent = statLabel(mirror ?? {}) === statLabel(s) ? mirror : null
+          return {
+            key: s.name ?? s.abbreviation ?? `${i}-${j}`,
+            label: statLabel(s),
+            us: first(s.displayValue, s.value),
+            them: opponent ? first(opponent.displayValue, opponent.value) : null,
+          }
+        })
+        .filter((s) => s.label && s.us !== undefined && s.us !== null),
+      ),
+    }))
+    .filter((g) => g.stats.length > 0)
+}
+
+function gameInfo(info) {
+  if (!info) return null
+  const attendance = Number(info.attendance)
+  return {
+    venue: info.venue?.fullName ?? null,
+    attendance: Number.isFinite(attendance) && attendance > 0 ? attendance.toLocaleString() : null,
+    duration: info.gameDuration ?? null,
+  }
+}
+
+/**
  * Standings arrive as a tree of conferences/divisions; collect every node that
  * actually carries entries, keeping the group name for the table header.
  */

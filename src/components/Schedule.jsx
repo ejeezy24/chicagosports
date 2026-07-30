@@ -1,10 +1,11 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useId, useState } from 'react'
 import { getSchedule } from '../api.js'
 import { scheduleEvents, recordFromGames } from '../espn.js'
 import { formatDate, formatTime, isSameDay, monthKey } from '../format.js'
 import { seasonLabel } from '../seasons.js'
 import { useAsync } from '../useAsync.js'
 import { Async, Panel } from './ui.jsx'
+import { Boxscore } from './Boxscore.jsx'
 import { Venue } from './Venue.jsx'
 
 export function Schedule({ team, season }) {
@@ -84,7 +85,7 @@ export function Schedule({ team, season }) {
                 return (
                   <div key={g.id ?? `${g.date}-${g.opponent.abbr}`}>
                     {showHeader ? <div className="month">{header}</div> : null}
-                    <GameRow game={g} />
+                    <GameRow game={g} team={team} />
                   </div>
                 )
               })}
@@ -96,7 +97,12 @@ export function Schedule({ team, season }) {
   )
 }
 
-function GameRow({ game }) {
+function GameRow({ game, team }) {
+  const [open, setOpen] = useState(false)
+  const panelId = useId()
+  // Nothing to show for a game that hasn't been played yet.
+  const canExpand = game.completed || game.state === 'in'
+
   // Kept as parts rather than a joined string so the venue can carry its own
   // hover card; away grounds fall back to plain text inside <Venue>.
   const sub = [
@@ -107,7 +113,8 @@ function GameRow({ game }) {
   ].filter(Boolean)
 
   return (
-    <div className={`game${isSameDay(game.date) ? ' today' : ''}`}>
+    <>
+    <div className={`game${isSameDay(game.date) ? ' today' : ''}${open ? ' is-open' : ''}`}>
       <div className="g-date">
         {formatDate(game.date)}
         <small>{game.completed ? 'Final' : formatTime(game.date)}</small>
@@ -160,6 +167,31 @@ function GameRow({ game }) {
           <span className="upcoming">{game.detail ?? formatTime(game.date)}</span>
         )}
       </div>
+
+      {/* Its own control rather than making the row a button: the row already
+          contains the venue's hover card, and buttons can't nest. */}
+      {canExpand ? (
+        <button
+          className="g-toggle"
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => setOpen((v) => !v)}
+        >
+          <span aria-hidden="true">{open ? '−' : '+'}</span>
+          <span className="sr-only">
+            {open ? 'Hide' : 'Show'} boxscore for {game.home ? 'vs' : '@'} {game.opponent.name}
+          </span>
+        </button>
+      ) : (
+        <span className="g-toggle is-empty" aria-hidden="true" />
+      )}
     </div>
+
+    {open ? (
+      <div id={panelId}>
+        <Boxscore team={team} eventId={game.id} />
+      </div>
+    ) : null}
+    </>
   )
 }
