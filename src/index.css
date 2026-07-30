@@ -532,6 +532,106 @@ input:focus-visible {
   color: var(--win);
 }
 
+/* ---------- per-player lines ---------- */
+
+.players-box {
+  margin-top: 14px;
+  border: 2px solid var(--line);
+  background: var(--panel);
+}
+
+.players-box h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 9px 12px;
+  font-family: 'Press Start 2P', Silkscreen, monospace;
+  font-size: 8px;
+  text-transform: uppercase;
+  background: var(--panel-2);
+  border-bottom: 2px solid var(--line);
+}
+
+.players-box.is-us h4 {
+  color: var(--team);
+}
+
+.players-box h4 img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.pcat + .pcat {
+  border-top: 2px solid var(--rule);
+}
+
+.pcat h5 {
+  margin: 0;
+  padding: 7px 12px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--dim);
+}
+
+.players-table {
+  font-size: 12px;
+}
+
+.players-table thead th {
+  position: static;
+  font-size: 7px;
+  padding: 6px 7px;
+  text-align: right;
+  background: transparent;
+  border-bottom: 2px solid var(--rule);
+}
+
+.players-table thead th:first-child {
+  text-align: left;
+  padding-left: 12px;
+}
+
+.players-table tbody th {
+  text-align: left;
+  font-weight: 400;
+  padding: 6px 7px 6px 12px;
+  border-bottom: 2px solid color-mix(in srgb, var(--rule) 50%, transparent);
+  white-space: nowrap;
+}
+
+.players-table tbody td {
+  text-align: right;
+  padding: 6px 7px;
+  border-bottom: 2px solid color-mix(in srgb, var(--rule) 50%, transparent);
+  white-space: nowrap;
+}
+
+.pname {
+  font-weight: 700;
+}
+
+.ppos {
+  margin-left: 6px;
+  font-size: 10px;
+  color: var(--dim);
+}
+
+.pstart {
+  margin-left: 5px;
+  font-size: 8px;
+  color: var(--team);
+}
+
+.players-table .ptotals th,
+.players-table .ptotals td {
+  font-weight: 700;
+  background: color-mix(in srgb, var(--line) 8%, transparent);
+  border-bottom: 0;
+}
+
 .box-stats {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

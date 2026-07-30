@@ -439,6 +439,62 @@ test('boxscores survive a thin or mismatched payload', () => {
   assert.equal(box.info, null)
 })
 
+test('per-player lines line up with their column headings', () => {
+  const box = boxscore(
+    {
+      header: {
+        competitions: [
+          { competitors: [{ homeAway: 'home', team: { id: '3' }, score: 21 }, { homeAway: 'away', team: { id: '8' }, score: 52 }] },
+        ],
+      },
+      boxscore: {
+        players: [
+          {
+            // Opponent listed first in the payload; the Chicago club should
+            // still come out on top.
+            team: { id: '8', displayName: 'Detroit Lions', abbreviation: 'DET' },
+            statistics: [
+              { name: 'passing', labels: ['YDS', 'TD'], athletes: [{ athlete: { id: '9', shortName: 'J. Goff' }, stats: ['312', '3'] }] },
+            ],
+          },
+          {
+            team: { id: '3', displayName: 'Chicago Bears', abbreviation: 'CHI' },
+            statistics: [
+              {
+                name: 'kickReturns',
+                labels: ['NO', 'YDS', 'TD'],
+                totals: ['3', '70', '0'],
+                athletes: [
+                  // Short a value: the row still has to line up with three columns.
+                  { athlete: { id: '1', shortName: 'D. Swift', position: { abbreviation: 'RB' } }, starter: true, stats: ['3', '70'] },
+                  { starter: false, stats: ['1', '2', '0'] }, // no athlete at all
+                ],
+              },
+              { name: 'skaters', labels: [], athletes: [] }, // empty group, as hockey sends
+            ],
+          },
+        ],
+      },
+    },
+    '3',
+    'football',
+  )
+
+  assert.equal(box.playerTables.length, 2)
+  assert.equal(box.playerTables[0].team.isUs, true, 'our club is listed first')
+  assert.equal(box.playerTables[0].team.abbr, 'CHI')
+
+  // The empty category is dropped; the camelCase name is made readable.
+  assert.deepEqual(box.playerTables[0].categories.map((c) => c.name), ['Kick Returns'])
+
+  const cat = box.playerTables[0].categories[0]
+  assert.equal(cat.rows.length, 1, 'a row with no athlete is not a player')
+  assert.deepEqual(cat.rows[0].stats, ['3', '70', '—'], 'short rows pad to the header')
+  assert.equal(cat.rows[0].starter, true)
+  assert.equal(cat.rows[0].position, 'RB')
+  assert.deepEqual(cat.totals, ['3', '70', '0'])
+})
+
 test('boxscore stats repeating a machine name still get distinct keys', () => {
   // Football reports interceptions thrown and interceptions caught under the
   // same `name`, which React cannot key on.

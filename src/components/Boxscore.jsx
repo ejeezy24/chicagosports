@@ -27,6 +27,9 @@ export function Boxscore({ team, eventId }) {
           return (
             <>
               <LineScore box={box} />
+              {box.playerTables.map((side) => (
+                <PlayerTables key={side.team.abbr || side.team.name} side={side} />
+              ))}
               {box.statGroups.length > 0 ? <StatComparison box={box} /> : null}
               {box.info ? <GameInfo info={box.info} /> : null}
             </>
@@ -87,6 +90,61 @@ function LineScore({ box }) {
           ))}
         </tbody>
       </table>
+    </div>
+  )
+}
+
+/** Every player who appeared, grouped the way the sport groups them. */
+function PlayerTables({ side }) {
+  return (
+    <div className={`players-box${side.team.isUs ? ' is-us' : ''}`}>
+      <h4>
+        {side.team.logo ? <img src={side.team.logo} alt="" loading="lazy" /> : null}
+        {side.team.name}
+      </h4>
+
+      {side.categories.map((cat) => (
+        <div className="pcat" key={cat.name}>
+          <h5>{cat.name}</h5>
+          <div className="table-wrap">
+            <table className="players-table">
+              <thead>
+                <tr>
+                  <th scope="col">Player</th>
+                  {cat.columns.map((c, i) => (
+                    <th scope="col" key={`${c}-${i}`}>
+                      {c}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {cat.rows.map((p) => (
+                  <tr key={p.id}>
+                    <th scope="row">
+                      <span className="pname">{p.name}</span>
+                      {p.position ? <span className="ppos">{p.position}</span> : null}
+                      {/* A starter marker only means something where ESPN sets it. */}
+                      {p.starter ? <span className="pstart" title="Started">▪</span> : null}
+                    </th>
+                    {p.stats.map((s, i) => (
+                      <td key={i}>{s}</td>
+                    ))}
+                  </tr>
+                ))}
+                {cat.totals ? (
+                  <tr className="ptotals">
+                    <th scope="row">Total</th>
+                    {cat.columns.map((_, i) => (
+                      <td key={i}>{cat.totals[i] ?? '—'}</td>
+                    ))}
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

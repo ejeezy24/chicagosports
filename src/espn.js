@@ -286,8 +286,56 @@ export function boxscore(payload, espnTeamId, sport) {
     rows,
     hasHitsErrors,
     statGroups: pairStats(payload?.boxscore?.teams ?? [], us, them),
+    playerTables: playerTables(payload?.boxscore?.players ?? [], us),
     info: gameInfo(payload?.gameInfo),
   }
+}
+
+/**
+ * Per-player lines, which ESPN ships as parallel arrays: a list of column
+ * headings and, for each athlete, a list of values in the same order.
+ *
+ * Categories name themselves inconsistently — baseball puts "batting" in
+ * `type`, football and hockey put "passing" or "goalies" in `name`, and
+ * basketball leaves both blank because it only has the one. Empty categories
+ * turn up too (hockey sends a "skaters" group with nobody in it).
+ */
+function playerTables(sides, us) {
+  const ordered = [...sides].sort((a, b) => {
+    const aIsUs = String(a.team?.id) === String(us?.team?.id)
+    return aIsUs ? -1 : String(b.team?.id) === String(us?.team?.id) ? 1 : 0
+  })
+
+  return ordered
+    .map((side) => ({
+      team: {
+        name: side.team?.displayName ?? side.team?.shortDisplayName ?? 'Unknown',
+        abbr: side.team?.abbreviation ?? '',
+        logo: logoOf(side.team),
+        isUs: String(side.team?.id) === String(us?.team?.id),
+      },
+      categories: (side.statistics ?? [])
+        .map((c) => {
+          const columns = c.labels ?? c.names ?? []
+          const athletes = (c.athletes ?? []).filter((a) => a.athlete)
+          return {
+            name: titleCase(c.name || c.type || 'Players'),
+            columns,
+            rows: athletes.map((a) => ({
+              id: a.athlete.id ?? a.athlete.displayName,
+              name: a.athlete.shortName ?? a.athlete.displayName ?? 'Unknown',
+              position: a.athlete.position?.abbreviation ?? a.position?.abbreviation ?? null,
+              starter: Boolean(a.starter),
+              // Pad or trim so every row lines up with the header, whatever
+              // ESPN sent.
+              stats: columns.map((_, i) => a.stats?.[i] ?? '—'),
+            })),
+            totals: Array.isArray(c.totals) && c.totals.length ? c.totals : null,
+          }
+        })
+        .filter((c) => c.columns.length > 0 && c.rows.length > 0),
+    }))
+    .filter((side) => side.categories.length > 0)
 }
 
 const statLabel = (s) => s.label ?? s.displayName ?? s.shortDisplayName ?? s.name
@@ -382,5 +430,8 @@ function walkStandings(node, out, depth) {
 function titleCase(s) {
   return String(s)
     .replace(/[_-]+/g, ' ')
+    // ESPN mixes separators with camelCase: "kickReturns" -> "Kick Returns".
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim()
 }
