@@ -4,6 +4,7 @@ import { TEAMS, accentFor, teamByKey } from './teams.js'
 import { clampSeason, currentSeasonFor, seasonLabel, seasonOptions } from './seasons.js'
 import { useAsync } from './useAsync.js'
 import { Schedule } from './components/Schedule.jsx'
+import { Players } from './components/Players.jsx'
 import { Roster } from './components/Roster.jsx'
 import { TeamStats } from './components/TeamStats.jsx'
 import { Standings } from './components/Standings.jsx'
@@ -13,6 +14,7 @@ import { Venue } from './components/Venue.jsx'
 const TABS = [
   { id: 'schedule', label: 'Schedule & scores' },
   { id: 'roster', label: 'Roster' },
+  { id: 'players', label: 'Player stats' },
   { id: 'stats', label: 'Team stats' },
   { id: 'standings', label: 'Standings' },
 ]
@@ -145,6 +147,9 @@ export default function App() {
         )}
         {tab === 'roster' && (
           <Roster key={`ros-${team.key}-${season}`} team={team} season={season} />
+        )}
+        {tab === 'players' && (
+          <Players key={`plr-${team.key}-${season}`} team={team} season={season} />
         )}
         {tab === 'stats' && (
           <TeamStats key={`sta-${team.key}-${season}`} team={team} season={season} />

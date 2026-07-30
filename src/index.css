@@ -625,6 +625,54 @@ input:focus-visible {
   color: var(--team);
 }
 
+/* The season table is the same shape, but sortable and full width. */
+.players-table.season {
+  width: 100%;
+  font-size: 12.5px;
+}
+
+.players-table.season thead th {
+  padding: 0;
+  border-bottom: 2px solid var(--line);
+  background: var(--panel-2);
+}
+
+.players-table.season thead th:first-child {
+  padding: 7px 7px 7px 12px;
+}
+
+.players-table.season thead th button {
+  width: 100%;
+  border: 0;
+  background: none;
+  padding: 7px;
+  font: inherit;
+  font-size: 7px;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.players-table.season thead th button:hover {
+  color: var(--team);
+  background: color-mix(in srgb, var(--team) 10%, transparent);
+}
+
+.players-table.season td.sorted {
+  background: color-mix(in srgb, var(--team) 10%, transparent);
+  font-weight: 700;
+}
+
+.pnum {
+  display: inline-block;
+  min-width: 20px;
+  margin-right: 7px;
+  font-size: 10px;
+  color: var(--dim);
+  text-align: right;
+}
+
 .players-table .ptotals th,
 .players-table .ptotals td {
   font-weight: 700;

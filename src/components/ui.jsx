@@ -1,3 +1,5 @@
+import { Component } from 'react'
+
 export function Panel({ title, aside, note, children }) {
   return (
     <section className="panel">
@@ -8,9 +10,35 @@ export function Panel({ title, aside, note, children }) {
         </div>
       )}
       {note ? <div className="note">{note}</div> : null}
-      {children}
+      <PanelBoundary>{children}</PanelBoundary>
     </section>
   )
+}
+
+/**
+ * A panel that throws while rendering should fail as a panel, not as the whole
+ * page. The normalizers read these payloads defensively, but they are shaped by
+ * someone else and a field that has always been an object can arrive as null;
+ * without this, one such surprise unmounts the entire app and leaves a blank
+ * screen — the thing every other error path here exists to avoid.
+ */
+class PanelBoundary extends Component {
+  state = { error: null }
+
+  static getDerivedStateFromError(error) {
+    return { error }
+  }
+
+  render() {
+    if (!this.state.error) return this.props.children
+    return (
+      <div className="state error">
+        Something in this panel didn&apos;t render.
+        <small>{this.state.error.message ?? String(this.state.error)}</small>
+        <small>The rest of the app is unaffected — try another season or team.</small>
+      </div>
+    )
+  }
 }
 
 export function Loading({ rows = 5 }) {

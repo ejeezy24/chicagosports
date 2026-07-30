@@ -10,6 +10,8 @@ decades.
   period, both teams' statistics side by side, and the attendance footer.
 - **Roster** — players grouped by position with number, height, weight, age,
   college, and birthplace, plus a filter box.
+- **Player stats** — season numbers for every player on the roster, sortable by
+  any column.
 - **Team stats** — season totals, per-game averages, and league ranks.
 - **Standings** — the club's division table for that season, with the Chicago
   team highlighted.
@@ -68,12 +70,34 @@ ESPN's public (undocumented, unauthenticated) endpoints:
 | Roster | `…/teams/{id}/roster?season={year}` |
 | Team statistics | `sports.core.api.espn.com/v2/sports/{sport}/leagues/{league}/seasons/{year}/types/2/teams/{id}/statistics` |
 | Boxscore | `…/{sport}/{league}/summary?event={gameId}` |
+| Player stats (not baseball) | `site.web.api.espn.com/apis/common/v3/sports/{sport}/{league}/teams/{id}/roster?season={year}` |
+
+### Baseball player stats come from MLB, not ESPN
+
+The one place the app reaches outside ESPN. ESPN publishes season splits for
+baseball only for players who *qualify* — three or four names out of a 26-man
+roster — which makes for an empty-looking table. MLB's own public API returns
+the entire active roster with statistics in a single request:
+
+```
+statsapi.mlb.com/api/v1/teams/{mlbId}/roster
+  ?rosterType=active&season={year}&hydrate=person(stats(type=season,season={year},gameType=R))
+```
+
+It allows cross-origin requests and needs no key. The trade-off is that it
+returns raw stat keys with no labels, so the columns for hitting and pitching
+are chosen in `src/players.js` rather than discovered from the payload — unlike
+the other three leagues, where ESPN describes its own columns. A player traded
+mid-season gets one line per club plus a combined one; the club's own split is
+what a team page shows.
 | Standings | `site.api.espn.com/apis/v2/sports/{sport}/{league}/standings?season={year}&level=3` |
 
 No API key, no account, no rate-limit paperwork — but also no service
 guarantees. These are the endpoints ESPN's own site uses, and they can change
 shape without notice, so `src/espn.js` reads every payload defensively and each
-panel degrades to a message rather than a blank screen.
+panel degrades to a message rather than a blank screen. Panels also sit behind
+an error boundary, so a field that has always been an object arriving as `null`
+takes out one panel instead of the whole page.
 
 ### Requests go through a same-origin proxy
 
@@ -107,6 +131,7 @@ src/
   api.js         fetch client — same-origin proxy, direct fallback, request cache
   espn.js        normalizers for the payload shapes (they vary by league and era)
   teams.js       the five clubs: ESPN ids, colours, venues, season ranges
+  players.js     season player stats, normalised from ESPN and from MLB
   venues.js      the four buildings and their history
   assets/venues/ USGS aerials, one per building, bundled at build time
   seasons.js     season numbering, current-season logic, dropdown options

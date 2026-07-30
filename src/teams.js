@@ -17,6 +17,9 @@ export const TEAMS = [
     leagueLabel: 'MLB',
     sport: 'baseball',
     espnId: '16',
+    // MLB's own StatsAPI uses different ids; see players.js for why baseball
+    // needs a second source.
+    mlbId: '112',
     venue: 'Wrigley Field',
     color: '#0E3386',
     accent: '#CC3433',
@@ -38,6 +41,7 @@ export const TEAMS = [
     leagueLabel: 'MLB',
     sport: 'baseball',
     espnId: '4',
+    mlbId: '145',
     venue: 'Rate Field',
     color: '#27251F',
     accent: '#C4CED4',

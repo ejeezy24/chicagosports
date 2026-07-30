@@ -10,6 +10,9 @@ const HOSTS = {
   site: { prefix: '/espn', direct: 'https://site.api.espn.com' },
   web: { prefix: '/espnweb', direct: 'https://site.web.api.espn.com' },
   core: { prefix: '/espncore', direct: 'https://sports.core.api.espn.com' },
+  // Not ESPN: MLB's own public API, used for baseball player statistics only.
+  // See players.js for why baseball can't come from ESPN like the rest.
+  mlb: { prefix: '/mlbstats', direct: 'https://statsapi.mlb.com' },
 }
 
 export class ApiError extends Error {
@@ -130,6 +133,28 @@ export function getTeamStats(team, season, seasonType = 2) {
  */
 export function getSummary(team, eventId) {
   return request('site', `${leaguePath(team)}/summary`, { event: eventId })
+}
+
+/**
+ * Season statistics for every player on the roster.
+ *
+ * Baseball goes to MLB's own API, which returns the whole active roster with
+ * stats in one call; ESPN publishes baseball splits only for qualified players.
+ * The other three leagues come from ESPN's roster endpoint, which carries them.
+ */
+export function getPlayerStats(team, season) {
+  if (team.sport === 'baseball') {
+    return request('mlb', `/api/v1/teams/${team.mlbId}/roster`, {
+      rosterType: 'active',
+      season,
+      // One request instead of one per player.
+      hydrate: `person(stats(type=season,season=${season},gameType=R))`,
+    })
+  }
+
+  return request('web', `/apis/common/v3/sports/${team.sport}/${team.league}/teams/${team.espnId}/roster`, {
+    season,
+  })
 }
 
 /** League standings for a season, division level. */

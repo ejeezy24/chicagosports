@@ -3,6 +3,7 @@
   "rewrites": [
     { "source": "/espnweb/:path*", "destination": "https://site.web.api.espn.com/:path*" },
     { "source": "/espncore/:path*", "destination": "https://sports.core.api.espn.com/:path*" },
-    { "source": "/espn/:path*", "destination": "https://site.api.espn.com/:path*" }
+    { "source": "/espn/:path*", "destination": "https://site.api.espn.com/:path*" },
+    { "source": "/mlbstats/:path*", "destination": "https://statsapi.mlb.com/:path*" }
   ]
 }

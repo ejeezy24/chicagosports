@@ -22,6 +22,7 @@ import { readdir, stat } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { IMAGERY_CREDIT, VENUES, venueByName } from '../src/venues.js'
+import { espnPlayerStats, mlbPlayerStats } from '../src/players.js'
 
 const cubs = teamByKey('cubs')
 const bulls = teamByKey('bulls')
@@ -569,6 +570,115 @@ test('mismatched stat order does not pair the wrong numbers together', () => {
   const hits = box.statGroups[0].stats.find((s) => s.label === 'Hits')
   assert.equal(hits.us, '26')
   assert.equal(hits.them, null, 'better to show nothing than the wrong statistic')
+})
+
+test('ESPN player stats survive the nulls ESPN actually sends', () => {
+  // Football rosters come back with null entries inside the stats array; one of
+  // them used to take the whole panel down.
+  const groups = espnPlayerStats({
+    positionGroups: [
+      null,
+      {
+        athletes: [
+          null,
+          {
+            id: '1',
+            displayName: 'Caleb Williams',
+            jersey: '18',
+            position: { abbreviation: 'QB' },
+            statistics: {
+              splits: {
+                categories: [
+                  null,
+                  {
+                    displayName: 'Passing',
+                    stats: [
+                      null,
+                      { name: 'passingYards', abbreviation: 'YDS', displayValue: '3,541' },
+                      { name: 'passingTouchdowns', abbreviation: 'TD', displayValue: '20' },
+                    ],
+                  },
+                  { displayName: 'Empty', stats: [] },
+                ],
+              },
+            },
+          },
+          {
+            id: '2',
+            displayName: 'Rome Odunze',
+            position: { abbreviation: 'WR' },
+            statistics: {
+              splits: {
+                categories: [
+                  {
+                    displayName: 'Passing',
+                    // Reports a stat the first player didn't, and misses one he did.
+                    stats: [{ name: 'passingTouchdowns', abbreviation: 'TD', displayValue: '1' }],
+                  },
+                ],
+              },
+            },
+          },
+        ],
+      },
+    ],
+  })
+
+  assert.deepEqual(groups.map((g) => g.name), ['Passing'])
+  assert.deepEqual(groups[0].columns, ['YDS', 'TD'])
+  assert.equal(groups[0].rows.length, 2)
+  assert.deepEqual(groups[0].rows[0].values, ['3,541', '20'])
+  // The union of columns is filled per row, so a missing stat leaves a gap
+  // rather than shifting later values into the wrong column.
+  assert.deepEqual(groups[0].rows[1].values, ['—', '1'])
+})
+
+test('MLB player stats pick the split for the club being viewed', () => {
+  const groups = mlbPlayerStats(
+    {
+      roster: [
+        null,
+        {
+          person: {
+            id: 1,
+            fullName: 'Aaron Civale',
+            stats: [
+              {
+                group: { displayName: 'pitching' },
+                splits: [
+                  // Combined line across both clubs, then one per club.
+                  { numTeams: 2, stat: { wins: 5, gamesPlayed: 19 } },
+                  { team: { id: 112 }, stat: { wins: 1, gamesPlayed: 3 } },
+                  { team: { id: 133 }, stat: { wins: 4, gamesPlayed: 16 } },
+                ],
+              },
+            ],
+          },
+          position: { abbreviation: 'P' },
+          jerseyNumber: '38',
+        },
+      ],
+    },
+    '112',
+  )
+
+  const pitching = groups.find((g) => g.name === 'Pitching')
+  const row = pitching.rows[0]
+  assert.equal(row.name, 'Aaron Civale')
+  assert.equal(row.jersey, '38')
+  // Three games with the Cubs, not the nineteen he pitched in total.
+  assert.equal(row.values[pitching.columns.indexOf('G')], '3')
+  assert.equal(row.values[pitching.columns.indexOf('W')], '1')
+  // Stats the payload doesn't carry show as a gap, not a zero.
+  assert.equal(row.values[pitching.columns.indexOf('ERA')], '—')
+})
+
+test('player stats degrade to nothing rather than throwing', () => {
+  assert.deepEqual(espnPlayerStats(null), [])
+  assert.deepEqual(espnPlayerStats({}), [])
+  assert.deepEqual(espnPlayerStats({ positionGroups: [] }), [])
+  assert.deepEqual(mlbPlayerStats(null, '112'), [])
+  assert.deepEqual(mlbPlayerStats({ roster: [] }, '112'), [])
 })
 
 test('standings flatten out of the conference/division tree', () => {
