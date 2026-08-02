@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getTeam } from './api.js'
 import { TEAMS, accentFor, teamByKey } from './teams.js'
-import { clampSeason, currentSeasonFor, seasonLabel, seasonOptions } from './seasons.js'
+import { clampSeason, seasonLabel, seasonOptions } from './seasons.js'
+import { TABS } from './tabs.js'
+import { DEFAULT_TEAM, resolveState } from './urlState.js'
+import { useUrlSync } from './useUrlSync.js'
 import { useAsync } from './useAsync.js'
 import { Schedule } from './components/Schedule.jsx'
 import { Players } from './components/Players.jsx'
@@ -10,14 +13,6 @@ import { TeamStats } from './components/TeamStats.jsx'
 import { Standings } from './components/Standings.jsx'
 import { TeamPicker, summarizeTeam } from './components/TeamPicker.jsx'
 import { Venue } from './components/Venue.jsx'
-
-const TABS = [
-  { id: 'schedule', label: 'Schedule & scores' },
-  { id: 'roster', label: 'Roster' },
-  { id: 'players', label: 'Player stats' },
-  { id: 'stats', label: 'Team stats' },
-  { id: 'standings', label: 'Standings' },
-]
 
 const store = {
   get(key, fallback) {
@@ -37,12 +32,31 @@ const store = {
 }
 
 export default function App() {
-  const [teamKey, setTeamKey] = useState(() => store.get('cs.team', 'cubs'))
+  // Resolved once, before any state exists, so a deep link paints straight away
+  // rather than flashing the default view. See urlState.js for why
+  // `includeOlder` is derived from the season rather than taken at face value —
+  // it is what stops the effect below from undoing a link to an old year.
+  const [initial] = useState(() =>
+    resolveState(window.location.search, store.get('cs.team', DEFAULT_TEAM)),
+  )
+
+  const [teamKey, setTeamKey] = useState(initial.teamKey)
   const team = teamByKey(teamKey)
 
-  const [season, setSeason] = useState(() => currentSeasonFor(team))
-  const [tab, setTab] = useState('schedule')
-  const [includeOlder, setIncludeOlder] = useState(false)
+  const [season, setSeason] = useState(initial.season)
+  const [tab, setTab] = useState(initial.tab)
+  const [includeOlder, setIncludeOlder] = useState(initial.includeOlder)
+
+  // Back and forward hand us a fully resolved state; applying it in one go keeps
+  // React's batching from letting the effects below see a half-updated triple.
+  const restore = useCallback((next) => {
+    setTeamKey(next.teamKey)
+    setSeason(next.season)
+    setTab(next.tab)
+    setIncludeOlder(next.includeOlder)
+  }, [])
+
+  useUrlSync({ teamKey, season, tab, includeOlder }, restore, store.get('cs.team', DEFAULT_TEAM))
 
   // Carry the chosen year across teams where it exists; clamp where it doesn't.
   useEffect(() => {

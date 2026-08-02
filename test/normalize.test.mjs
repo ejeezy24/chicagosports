@@ -23,6 +23,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { IMAGERY_CREDIT, VENUES, venueByName } from '../src/venues.js'
 import { espnPlayerStats, mlbPlayerStats, mlbRosterGroups } from '../src/players.js'
+import { DEFAULT_TEAM, parseParams, resolveState, toSearch } from '../src/urlState.js'
 
 const cubs = teamByKey('cubs')
 const bulls = teamByKey('bulls')
@@ -738,6 +739,71 @@ test('player stats degrade to nothing rather than throwing', () => {
   assert.deepEqual(espnPlayerStats({ positionGroups: [] }), [])
   assert.deepEqual(mlbPlayerStats(null, '112'), [])
   assert.deepEqual(mlbPlayerStats({ roster: [] }, '112'), [])
+})
+
+const NOW = new Date('2026-08-02T12:00:00Z')
+
+test('a deep link to an old season survives the options list', () => {
+  // The hazard this exists to prevent: App snaps `season` back whenever it
+  // isn't in the visible list, and that list starts at modernFrom (2003 for the
+  // Bulls) unless the older-seasons box is ticked. Deriving the tick from the
+  // season is what stops a link to 1995 being rewritten to the current year.
+  const s = resolveState('?team=bulls&season=1995&tab=roster', null, NOW)
+  assert.equal(s.teamKey, 'bulls')
+  assert.equal(s.season, 1995)
+  assert.equal(s.tab, 'roster')
+  assert.equal(s.includeOlder, true, 'must be on, or the season gets snapped away')
+  assert.ok(seasonOptions(teamByKey('bulls'), { includeOlder: s.includeOlder, now: NOW }).includes(1995))
+
+  // An explicit older=0 must not win over a season that needs it.
+  assert.equal(resolveState('?team=bulls&season=1995&older=0', null, NOW).includeOlder, true)
+
+  // A modern season leaves the box alone.
+  assert.equal(resolveState('?team=bulls&season=2020', null, NOW).includeOlder, false)
+})
+
+test('url state falls back per key, and garbage never throws', () => {
+  // Nothing at all: stored team, current season, first tab.
+  const bare = resolveState('', 'bears', NOW)
+  assert.equal(bare.teamKey, 'bears')
+  assert.equal(bare.season, currentSeasonFor(teamByKey('bears'), NOW))
+  assert.equal(bare.tab, 'schedule')
+
+  // A partial link resolves the rest rather than giving up.
+  assert.equal(resolveState('?tab=roster', 'bears', NOW).teamKey, 'bears')
+
+  // Each bad key falls back on its own.
+  const junk = resolveState('?team=zzz&season=abc&tab=nope', 'whitesox', NOW)
+  assert.equal(junk.teamKey, 'whitesox')
+  assert.equal(junk.season, currentSeasonFor(teamByKey('whitesox'), NOW))
+  assert.equal(junk.tab, 'schedule')
+
+  // An unusable stored key falls through to the default rather than crashing.
+  assert.equal(resolveState('', 'not-a-team', NOW).teamKey, DEFAULT_TEAM)
+  assert.equal(resolveState('', null, NOW).teamKey, DEFAULT_TEAM)
+
+  // A two-digit year would otherwise clamp to the club's oldest season, which
+  // reads as a deliberate choice rather than a typo.
+  assert.equal(resolveState('?team=cubs&season=2', null, NOW).season, currentSeasonFor(cubs, NOW))
+  // A real but out-of-range year clamps instead of being discarded.
+  assert.equal(resolveState('?team=cubs&season=1912', null, NOW).season, cubs.oldestSeason)
+})
+
+test('the query string round-trips and keeps params it does not own', () => {
+  const state = resolveState('?team=blackhawks&season=1995&tab=players', null, NOW)
+  const search = toSearch(state)
+
+  // Fixed key order, so a string compare is a valid "did it change?" test.
+  assert.equal(search, '?team=blackhawks&season=1995&tab=players&older=1')
+  assert.deepEqual(resolveState(search, null, NOW), state)
+
+  // older is only emitted when true.
+  assert.ok(!toSearch(resolveState('?team=cubs&season=2020', null, NOW)).includes('older'))
+
+  // Someone else's parameters survive being shared.
+  const kept = toSearch(state, '?utm_source=x&team=stale')
+  assert.ok(kept.includes('utm_source=x'), 'unknown params should be preserved')
+  assert.equal((kept.match(/team=/g) ?? []).length, 1, 'and ours should not be duplicated')
 })
 
 test('standings flatten out of the conference/division tree', () => {
