@@ -1,18 +1,52 @@
-import { Fragment, useId, useState } from 'react'
-import { getSchedule } from '../api.js'
-import { scheduleEvents, recordFromGames } from '../espn.js'
+import { Fragment, useId, useMemo, useState } from 'react'
+import { getSchedule, getScoreboard } from '../api.js'
+import { scheduleEvents, recordFromGames, scoreboardScores, withLiveScores } from '../espn.js'
 import { formatDate, formatTime, isSameDay, monthKey } from '../format.js'
 import { seasonLabel } from '../seasons.js'
 import { useAsync } from '../useAsync.js'
+import { useLivePoll } from '../useLivePoll.js'
 import { Async, Panel } from './ui.jsx'
 import { Boxscore } from './Boxscore.jsx'
 import { Venue } from './Venue.jsx'
 
 export function Schedule({ team, season }) {
   const [seasonType, setSeasonType] = useState(2)
+  const [newestFirst, setNewestFirst] = useState(false)
   const state = useAsync(
     () => getSchedule(team, season, seasonType),
     [team.key, season, seasonType],
+  )
+
+  // Hoisted out of the render prop below: hooks can't run in there, and this is
+  // also the normalizer that used to run twice on every render.
+  const scheduled = useMemo(
+    () => scheduleEvents(state.data, team.espnId),
+    [state.data, team.espnId],
+  )
+
+  // `state === 'in'` can only be true for the current season, so no season
+  // guard is needed here.
+  const anyLive = scheduled.some((g) => g.state === 'in')
+
+  // The schedule payload leaves the score out entirely while a game is being
+  // played, so a running score has to come from the league scoreboard and be
+  // laid over the top. Only fetched while something is actually live.
+  const live = useAsync(
+    ({ fresh }) => (anyLive ? getScoreboard(team, { fresh }) : Promise.resolve(null)),
+    [team.key, anyLive],
+  )
+  useLivePoll(live.refresh, anyLive)
+
+  const withScores = useMemo(
+    () => withLiveScores(scheduled, scoreboardScores(live.data)),
+    [scheduled, live.data],
+  )
+
+  // Chronological reads like a fixture list; newest-first answers "what just
+  // happened?", which is what you want mid-season.
+  const games = useMemo(
+    () => (newestFirst ? [...withScores].reverse() : withScores),
+    [withScores, newestFirst],
   )
 
   const types = team.seasonTypes
@@ -21,27 +55,37 @@ export function Schedule({ team, season }) {
     <Panel
       title={`${seasonLabel(team, season)} schedule`}
       aside={
-        <div className="segmented">
-          {types.map((t) => (
-            <button
-              key={t.id}
-              aria-pressed={seasonType === t.id}
-              onClick={() => setSeasonType(t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
+        <div className="panel-controls">
+          <button
+            className="order-toggle"
+            onClick={() => setNewestFirst((v) => !v)}
+            aria-pressed={newestFirst}
+            title={newestFirst ? 'Showing most recent first' : 'Showing oldest first'}
+          >
+            <span aria-hidden="true">{newestFirst ? '▼' : '▲'}</span>
+            {newestFirst ? 'Newest' : 'Oldest'}
+          </button>
+          <div className="segmented">
+            {types.map((t) => (
+              <button
+                key={t.id}
+                aria-pressed={seasonType === t.id}
+                onClick={() => setSeasonType(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
       }
     >
       <Async
         state={state}
         what="the schedule"
-        isEmpty={(d) => scheduleEvents(d, team.espnId).length === 0}
+        isEmpty={() => games.length === 0}
         empty={`No ${types.find((t) => t.id === seasonType)?.label.toLowerCase()} games published for ${seasonLabel(team, season)}.`}
       >
-        {(data) => {
-          const games = scheduleEvents(data, team.espnId)
+        {() => {
           const record = recordFromGames(games)
           const scored = games.reduce(
             (acc, g) => {

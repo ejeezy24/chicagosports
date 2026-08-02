@@ -15,6 +15,8 @@ import {
   standingsGroups,
   boxscore,
   periodLabels,
+  scoreboardScores,
+  withLiveScores,
 } from '../src/espn.js'
 import { currentSeasonFor, seasonLabel, seasonOptions, clampSeason } from '../src/seasons.js'
 import { BACKDROP, TEAMS, accentFor, teamByKey } from '../src/teams.js'
@@ -163,6 +165,50 @@ test('events sort by date and roll up into a record', () => {
   assert.deepEqual(games.map((g) => g.id), ['a', 'b'])
   assert.equal(recordFromGames(games).text, '1-1')
   assert.equal(recordFromGames(games).played, 2)
+})
+
+test('live scores are laid over a schedule that has none', () => {
+  // ESPN's schedule payload omits the score entirely while a game is being
+  // played — it carries only the probable pitchers — so an in-progress row has
+  // nothing to show until the scoreboard fills it in.
+  const scores = scoreboardScores({
+    events: [
+      {
+        id: '99',
+        competitions: [
+          {
+            status: { type: { state: 'in', shortDetail: 'Bot 7th' } },
+            competitors: [
+              { team: { id: '16' }, score: '1' },
+              { team: { id: '10' }, score: '2' },
+            ],
+          },
+        ],
+      },
+    ],
+  })
+
+  assert.equal(scores['99'].detail, 'Bot 7th')
+  assert.deepEqual(scores['99'].byTeam, { 16: '1', 10: '2' })
+
+  const games = [
+    { id: '99', state: 'in', usId: '16', opponent: { id: '10' }, ourScore: null, theirScore: null, detail: 'Top 1st' },
+    { id: '98', state: 'post', usId: '16', opponent: { id: '11' }, ourScore: '5', theirScore: '3', detail: 'Final' },
+  ]
+
+  const merged = withLiveScores(games, scores)
+  assert.equal(merged[0].ourScore, '1')
+  assert.equal(merged[0].theirScore, '2')
+  assert.equal(merged[0].detail, 'Bot 7th')
+
+  // A finished game already has the right score; don't touch it.
+  assert.equal(merged[1], games[1])
+
+  // Nothing to merge returns the very same array, so memoised consumers of it
+  // don't rerun on every poll.
+  assert.equal(withLiveScores(games, {}), games)
+  assert.equal(withLiveScores(games, scoreboardScores(null)), games)
+  assert.equal(withLiveScores(games, { 99: { byTeam: {} } }), games)
 })
 
 test('ties are counted separately', () => {

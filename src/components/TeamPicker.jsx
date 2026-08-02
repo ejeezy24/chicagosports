@@ -56,7 +56,10 @@ export function summarizeTeam(payload) {
     }`
 
     if (state === 'in') {
-      next = `LIVE ${vs} ${us?.score ?? ''}-${opponent?.score ?? ''}`.trim()
+      // This endpoint omits the score while a game is in progress, so the
+      // period is all there is to say — a bare "-" just looked broken.
+      const detail = comp.status?.type?.shortDetail
+      next = `LIVE ${vs}${detail ? ` · ${detail}` : ''}`
     } else {
       const when = `${formatDate(event.date)} ${formatTime(event.date)}`.trim()
       next = `${vs} · ${when}`
@@ -64,6 +67,9 @@ export function summarizeTeam(payload) {
   }
 
   return {
+    // Drives whether the header strip keeps polling; the display string alone
+    // would mean parsing text back out to know.
+    live: event?.competitions?.[0]?.status?.type?.state === 'in',
     logo: team.logos?.[0]?.href ?? null,
     record: record?.summary ? `${record.summary}${team.standingSummary ? ` · ${team.standingSummary}` : ''}` : team.standingSummary ?? null,
     next,

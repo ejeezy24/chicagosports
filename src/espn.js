@@ -68,7 +68,10 @@ export function normalizeEvent(event, espnTeamId) {
     week: event.week?.number ?? null,
     home: us?.homeAway === 'home',
     neutral: Boolean(comp.neutralSite),
+    // Both ids, so a live scoreboard can be matched onto this row later.
+    usId: us?.team?.id ?? null,
     opponent: {
+      id: them?.team?.id ?? null,
       name: them?.team?.shortDisplayName ?? them?.team?.displayName ?? 'TBD',
       fullName: them?.team?.displayName ?? 'TBD',
       abbr: them?.team?.abbreviation ?? '',
@@ -86,6 +89,65 @@ export function normalizeEvent(event, espnTeamId) {
     note: comp.notes?.[0]?.headline ?? event.notes?.[0]?.headline ?? null,
     record: us?.records?.find((r) => r.type === 'total' || r.name === 'overall')?.summary ?? null,
   }
+}
+
+/**
+ * Live scores, keyed by event id, from a league scoreboard.
+ *
+ * The schedule payload omits scores while a game is in progress, so a row that
+ * says "Top 7th" has nothing to show next to it. This fills that gap; see
+ * `withLiveScores`.
+ */
+export function scoreboardScores(payload) {
+  const out = {}
+  for (const event of payload?.events ?? []) {
+    const comp = event.competitions?.[0]
+    const id = event.id ?? comp?.id
+    if (!comp || !id) continue
+
+    const type = comp.status?.type ?? {}
+    out[id] = {
+      state: type.state ?? null,
+      detail: first(type.shortDetail, type.detail) ?? null,
+      // Keyed by team so the caller doesn't need to know home from away.
+      byTeam: Object.fromEntries(
+        (comp.competitors ?? [])
+          .filter((c) => c.team?.id)
+          .map((c) => [String(c.team.id), scoreOf(c)]),
+      ),
+    }
+  }
+  return out
+}
+
+/**
+ * Overlay live scores onto already-normalized games. Anything not in progress
+ * is left exactly as it was — a finished game's score is already correct, and
+ * the scoreboard only covers today.
+ */
+export function withLiveScores(games, scores) {
+  if (!scores || Object.keys(scores).length === 0) return games
+
+  let changed = false
+  const merged = games.map((g) => {
+    const live = scores[g.id]
+    if (!live || g.state !== 'in') return g
+
+    const ours = live.byTeam[String(g.usId)]
+    const theirs = live.byTeam[String(g.opponent.id)]
+    if (ours === undefined && theirs === undefined) return g
+
+    changed = true
+    return {
+      ...g,
+      ourScore: ours ?? g.ourScore,
+      theirScore: theirs ?? g.theirScore,
+      detail: live.detail ?? g.detail,
+    }
+  })
+
+  // Keep the same array when nothing moved, so memoised consumers don't rerun.
+  return changed ? merged : games
 }
 
 export function scheduleEvents(payload, espnTeamId) {

@@ -268,6 +268,39 @@ input:focus-visible {
   flex: 1;
 }
 
+.panel-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.order-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 2px solid var(--line);
+  background: var(--panel);
+  box-shadow: 2px 2px 0 var(--shadow);
+  padding: 5px 8px;
+  font-family: 'Press Start 2P', Silkscreen, monospace;
+  font-size: 7px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.order-toggle:hover {
+  background: var(--panel-2);
+}
+
+.order-toggle[aria-pressed='true'] {
+  background: var(--team);
+  color: #fff;
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
 .segmented {
   display: inline-flex;
   padding: 3px;

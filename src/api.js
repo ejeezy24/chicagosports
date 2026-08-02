@@ -81,7 +81,9 @@ async function request(hostKey, path, params, options = {}) {
   const host = HOSTS[hostKey]
   const url = path + buildQuery(params)
   const key = `${hostKey}:${url}`
-  if (cache.has(key)) return cache.get(key)
+  // A live score is the one thing here that isn't immutable, so polling asks to
+  // go past the cache rather than being served the payload it already has.
+  if (!options.fresh && cache.has(key)) return cache.get(key)
 
   const pending = (async () => {
     try {
@@ -105,23 +107,42 @@ async function request(hostKey, path, params, options = {}) {
   })()
 
   cache.set(key, pending)
-  pending.catch(() => cache.delete(key)) // don't cache failures
+  // Don't cache failures — but only evict this attempt. Without the identity
+  // check a failed refresh would throw away a newer, good payload that other
+  // panels are already awaiting. Unreachable before polling existed.
+  pending.catch(() => {
+    if (cache.get(key) === pending) cache.delete(key)
+  })
   return pending
 }
 
 const leaguePath = (team) => `/apis/site/v2/sports/${team.sport}/${team.league}`
 
 /** Team profile: logo, colours, current record, next game. */
-export function getTeam(team) {
-  return request('site', `${leaguePath(team)}/teams/${team.espnId}`)
+export function getTeam(team, { fresh } = {}) {
+  return request('site', `${leaguePath(team)}/teams/${team.espnId}`, undefined, { fresh })
+}
+
+/**
+ * Today's games across a league, with live scores.
+ *
+ * The schedule and team endpoints leave the score off entirely while a game is
+ * in progress — they carry only the probable pitchers — so this is the only
+ * place a running score can be read. One request covers every game in the
+ * league, which is cheaper than a summary per game.
+ */
+export function getScoreboard(team, { fresh } = {}) {
+  return request('site', `${leaguePath(team)}/scoreboard`, undefined, { fresh })
 }
 
 /** Every game for one season and season type (1 pre, 2 regular, 3 post). */
-export function getSchedule(team, season, seasonType = 2) {
-  return request('site', `${leaguePath(team)}/teams/${team.espnId}/schedule`, {
-    season,
-    seasontype: seasonType,
-  })
+export function getSchedule(team, season, seasonType = 2, { fresh } = {}) {
+  return request(
+    'site',
+    `${leaguePath(team)}/teams/${team.espnId}/schedule`,
+    { season, seasontype: seasonType },
+    { fresh },
+  )
 }
 
 /**

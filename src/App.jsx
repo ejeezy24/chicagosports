@@ -6,6 +6,7 @@ import { TABS } from './tabs.js'
 import { DEFAULT_TEAM, resolveState } from './urlState.js'
 import { useUrlSync } from './useUrlSync.js'
 import { useAsync } from './useAsync.js'
+import { useLivePoll } from './useLivePoll.js'
 import { Schedule } from './components/Schedule.jsx'
 import { Players } from './components/Players.jsx'
 import { Roster } from './components/Roster.jsx'
@@ -77,15 +78,22 @@ export default function App() {
   }, [seasons])
 
   const overviewState = useAsync(
-    () =>
+    ({ fresh }) =>
       Promise.all(
         TEAMS.map((t) =>
-          getTeam(t)
+          getTeam(t, { fresh })
             .then((payload) => [t.key, summarizeTeam(payload)])
             .catch(() => [t.key, null]),
         ),
       ).then(Object.fromEntries),
     [],
+  )
+
+  // The strip is on screen whichever tab is open, so it polls independently of
+  // the schedule panel.
+  useLivePoll(
+    overviewState.refresh,
+    Object.values(overviewState.data ?? {}).some((v) => v?.live),
   )
 
   const accent = accentFor(team)
