@@ -16,6 +16,14 @@ const HOSTS = {
   // See players.js for why.
   mlb: { prefix: '/mlbstats', direct: 'https://statsapi.mlb.com' },
   nhl: { prefix: '/nhlweb', direct: 'https://api-web.nhle.com' },
+  // Football history is a community dataset published as GitHub release assets,
+  // which redirect to a signed URL on a host that sends no CORS headers. The
+  // redirect has to be followed server-side, so there is no direct fallback.
+  nflverse: {
+    prefix: '/nflverse',
+    direct: 'https://github.com/nflverse/nflverse-data/releases/download',
+    proxyOnly: true,
+  },
 }
 
 /** The NHL keys a season by both of its years: 2015 -> '20142015'. */
@@ -31,9 +39,9 @@ export class ApiError extends Error {
   }
 }
 
-function buildQuery(params = {}) {
+function buildQuery(params) {
   const qs = new URLSearchParams()
-  for (const [k, v] of Object.entries(params)) {
+  for (const [k, v] of Object.entries(params ?? {})) {
     if (v === undefined || v === null || v === '') continue
     qs.set(k, String(v))
   }
@@ -41,22 +49,31 @@ function buildQuery(params = {}) {
   return s ? `?${s}` : ''
 }
 
-async function fetchJson(url) {
+async function fetchBody(url, { text: wantText = false } = {}) {
   let res
   try {
-    res = await fetch(url, { headers: { Accept: 'application/json' } })
+    res = await fetch(url, {
+      headers: { Accept: wantText ? 'text/csv, text/plain, */*' : 'application/json' },
+    })
   } catch (cause) {
     throw new ApiError('Network request failed', { url, cause })
   }
   if (!res.ok) {
-    throw new ApiError(`ESPN responded ${res.status}`, { status: res.status, url })
+    throw new ApiError(`Upstream responded ${res.status}`, { status: res.status, url })
   }
-  const text = await res.text()
+
+  const body = await res.text()
+  // One source ships CSV rather than JSON; the caller says which it wants.
+  if (wantText) {
+    if (!body) throw new ApiError('Empty response', { url })
+    return body
+  }
+
   try {
-    return JSON.parse(text)
+    return JSON.parse(body)
   } catch {
     // Static hosts answer unknown paths with index.html; treat that as a miss
-    // so the caller can fall back to the direct ESPN origin.
+    // so the caller can fall back to the direct origin.
     throw new ApiError('Expected JSON but got something else', { url })
   }
 }
@@ -65,7 +82,7 @@ async function fetchJson(url) {
 // same team payload, so keep the in-flight promise around for the page session.
 const cache = new Map()
 
-async function request(hostKey, path, params) {
+async function request(hostKey, path, params, options = {}) {
   const host = HOSTS[hostKey]
   const url = path + buildQuery(params)
   const key = `${hostKey}:${url}`
@@ -73,15 +90,18 @@ async function request(hostKey, path, params) {
 
   const pending = (async () => {
     try {
-      return await fetchJson(host.prefix + url)
+      return await fetchBody(host.prefix + url, options)
     } catch (proxyError) {
+      // Some sources are only reachable through the proxy — nflverse redirects
+      // to a host that sends no CORS headers — so there is nothing to retry.
+      if (host.proxyOnly) throw proxyError
       // Any failure here is worth a second opinion: a 404 can mean the rewrite
       // isn't configured rather than "no such season", and a 502/504 means the
       // proxy itself couldn't reach ESPN — the case where going direct helps
       // most. The direct attempt is authoritative, so its error is the one
       // worth surfacing, but keep the proxy's around for debugging.
       try {
-        return await fetchJson(host.direct + url)
+        return await fetchBody(host.direct + url, options)
       } catch (directError) {
         directError.proxyError = proxyError
         throw directError
@@ -128,6 +148,10 @@ export function getRoster(team, season) {
     }
     if (team.sport === 'hockey') {
       return request('nhl', `/v1/roster/${team.abbr}/${nhlSeason(season)}`)
+    }
+    if (team.sport === 'football') {
+      // League-wide for the season; the club's rows are picked out client-side.
+      return request('nflverse', `/rosters/roster_${season}.csv`, {}, { text: true })
     }
   }
 

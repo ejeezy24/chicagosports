@@ -27,6 +27,15 @@ const proxy = {
   // The leagues' own APIs, for the past seasons ESPN doesn't serve.
   '/mlbstats': espnProxy('https://statsapi.mlb.com', '/mlbstats'),
   '/nhlweb': espnProxy('https://api-web.nhle.com', '/nhlweb'),
+  // nflverse publishes as GitHub release assets, which 302 to a signed URL on
+  // another host that sends no CORS headers — so this has to be followed
+  // server-side. The browser cannot fetch it directly at all.
+  '/nflverse': {
+    ...espnProxy('https://github.com', '/nflverse'),
+    followRedirects: true,
+    rewrite: (p) =>
+      p.replace(/^\/nflverse/, '/nflverse/nflverse-data/releases/download'),
+  },
 }
 
 export default defineConfig({

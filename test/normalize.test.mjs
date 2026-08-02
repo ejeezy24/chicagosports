@@ -26,8 +26,10 @@ import {
   espnPlayerStats,
   mlbPlayerStats,
   mlbRosterGroups,
+  nflRosterGroups,
   nhlPlayerStats,
   nhlRosterGroups,
+  parseCsv,
 } from '../src/players.js'
 import { DEFAULT_TEAM, parseParams, resolveState, toSearch } from '../src/urlState.js'
 
@@ -843,6 +845,55 @@ test('NHL skaters and goalies become separate tables, formatted', () => {
   // An empty side produces no table at all.
   assert.deepEqual(nhlPlayerStats({ skaters: [], goalies: [] }), [])
   assert.deepEqual(nhlPlayerStats(null), [])
+})
+
+test('CSV parsing survives commas inside quoted fields', () => {
+  // nflverse headshot URLs contain commas — .../f_auto,q_auto/... — and a naive
+  // split on commas shifts every column after them.
+  const csv = [
+    'season,team,full_name,headshot_url,college',
+    '2015,CHI,Jared Allen,"https://x/f_auto,q_auto/img",Idaho State',
+    '2015,GB,Someone Else,,Wisconsin',
+  ].join('\n')
+
+  const all = parseCsv(csv)
+  assert.equal(all.length, 2)
+  assert.equal(all[0].headshot_url, 'https://x/f_auto,q_auto/img')
+  assert.equal(all[0].college, 'Idaho State', 'the column after a quoted field must not shift')
+
+  // The predicate filters league-wide data down to one club.
+  assert.deepEqual(parseCsv(csv, (r) => r.team === 'CHI').map((r) => r.full_name), ['Jared Allen'])
+
+  // Escaped quotes, blank lines and a header-only file.
+  assert.equal(parseCsv('a,b\n"say ""hi""",2').at(0).a, 'say "hi"')
+  assert.deepEqual(parseCsv('a,b'), [])
+  assert.deepEqual(parseCsv(''), [])
+  assert.deepEqual(parseCsv(null), [])
+})
+
+test('an nflverse roster groups by unit and picks one club', () => {
+  const csv = [
+    'season,team,position,jersey_number,full_name,birth_date,height,weight,college,headshot_url,gsis_id,status',
+    '2015,CHI,WR,17,Alshon Jeffery,1990-02-14,75,216,South Carolina,https://x/1.png,00-1,ACT',
+    '2015,CHI,OLB,69,Jared Allen,1982-04-03,78,255,Idaho State,https://x/2.png,00-2,ACT',
+    '2015,CHI,K,6,Robbie Gould,1982-12-06,72,185,Penn State,https://x/3.png,00-3,ACT',
+    '2015,GB,QB,12,Aaron Rodgers,1983-12-02,74,225,California,https://x/4.png,00-4,ACT',
+  ].join('\n')
+
+  const groups = nflRosterGroups(csv, 'CHI', 2015)
+
+  // Units in reading order, and Green Bay left out of it.
+  assert.deepEqual(groups.map((g) => g.label), ['Offense', 'Defense', 'Special teams'])
+  assert.equal(groups.reduce((n, g) => n + g.athletes.length, 0), 3)
+
+  const jeffery = groups[0].athletes[0]
+  assert.equal(jeffery.name, 'Alshon Jeffery')
+  assert.equal(jeffery.height, `6' 3"`, 'inches become feet and inches')
+  assert.equal(jeffery.weight, '216 lbs')
+  assert.equal(jeffery.age, 25, 'his age in 2015, not now')
+  assert.equal(jeffery.college, 'South Carolina')
+
+  assert.equal(nflRosterGroups(csv, 'NYJ', 2015).length, 0, 'a club with no rows gets nothing')
 })
 
 test('player stats degrade to nothing rather than throwing', () => {

@@ -150,6 +150,103 @@ export function mlbRosterGroups(payload, season) {
 }
 
 /**
+ * A CSV row splitter that understands quoted fields. nflverse embeds headshot
+ * URLs containing commas — `.../f_auto,q_auto/...` — so splitting on commas
+ * alone shifts every later column.
+ */
+function csvRow(line) {
+  const out = []
+  let field = ''
+  let quoted = false
+
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i]
+    if (quoted) {
+      if (c === '"') {
+        if (line[i + 1] === '"') {
+          field += '"' // an escaped quote inside a quoted field
+          i++
+        } else quoted = false
+      } else field += c
+    } else if (c === '"') quoted = true
+    else if (c === ',') {
+      out.push(field)
+      field = ''
+    } else field += c
+  }
+  out.push(field)
+  return out
+}
+
+/** Parse only what we need, and only the rows for one club. */
+export function parseCsv(text, keep) {
+  const lines = String(text ?? '').split(/\r?\n/)
+  if (lines.length < 2) return []
+
+  const header = csvRow(lines[0])
+  const rows = []
+
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i]) continue
+    const cells = csvRow(lines[i])
+    const row = {}
+    for (let c = 0; c < header.length; c++) row[header[c]] = cells[c] ?? ''
+    if (!keep || keep(row)) rows.push(row)
+  }
+  return rows
+}
+
+// nflverse gives a specific position; a roster is read in three blocks.
+const NFL_UNIT = {
+  Offense: ['QB', 'RB', 'FB', 'HB', 'WR', 'TE', 'T', 'OT', 'G', 'OG', 'C', 'OL'],
+  Defense: ['DE', 'DT', 'NT', 'DL', 'EDGE', 'LB', 'ILB', 'OLB', 'MLB', 'CB', 'DB', 'S', 'FS', 'SS'],
+  'Special teams': ['K', 'P', 'LS', 'PK'],
+}
+
+const nflUnit = (position) =>
+  Object.keys(NFL_UNIT).find((unit) => NFL_UNIT[unit].includes(position)) ?? 'Other'
+
+/**
+ * nflverse roster CSV, one file per season, league-wide — filtered to one club
+ * and reshaped into what the roster view expects.
+ */
+export function nflRosterGroups(text, teamAbbr, season) {
+  const rows = parseCsv(text, (r) => r.team === teamAbbr)
+  if (rows.length === 0) return []
+
+  const buckets = new Map()
+
+  for (const r of rows) {
+    const unit = nflUnit(r.position)
+    if (!buckets.has(unit)) buckets.set(unit, [])
+    buckets.get(unit).push({
+      id: r.gsis_id || r.esb_id || `${r.full_name}-${r.jersey_number}`,
+      name: r.full_name || [r.first_name, r.last_name].filter(Boolean).join(' ') || 'Unknown',
+      jersey: r.jersey_number || null,
+      position: r.position || null,
+      positionName: r.depth_chart_position || r.position || null,
+      height: feetAndInches(r.height),
+      weight: r.weight ? `${r.weight} lbs` : null,
+      age: ageDuring(r.birth_date, season),
+      college: r.college || null,
+      birthplace: '', // not in this dataset
+      headshot: r.headshot_url || null,
+      bats: null,
+      throws: null,
+      status: r.status || null,
+    })
+  }
+
+  const order = [...Object.keys(NFL_UNIT), 'Other']
+  return [...buckets.entries()]
+    .sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]))
+    .map(([label, athletes]) => ({
+      label,
+      athletes: athletes.sort((a, b) => a.name.localeCompare(b.name)),
+    }))
+}
+
+/**
  * NHL rosters arrive already grouped, and every name is a localised object
  * (`{ default: 'Baun' }`) rather than a string.
  */

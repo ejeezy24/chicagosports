@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { getRoster, isHistorical } from '../api.js'
 import { rosterCoach, rosterGroups, rosterSeason } from '../espn.js'
-import { mlbRosterGroups, nhlRosterGroups } from '../players.js'
+import { mlbRosterGroups, nflRosterGroups, nhlRosterGroups } from '../players.js'
 import { seasonLabel } from '../seasons.js'
 import { useAsync } from '../useAsync.js'
 import { Async, Panel } from './ui.jsx'
@@ -10,6 +10,10 @@ import { Async, Panel } from './ui.jsx'
 const LEAGUE_SOURCE = {
   baseball: { label: 'MLB', groups: mlbRosterGroups },
   hockey: { label: 'the NHL', groups: nhlRosterGroups },
+  football: {
+    label: 'nflverse',
+    groups: (data, season, team) => nflRosterGroups(data, team.abbr, season),
+  },
 }
 
 export function Roster({ team, season }) {
@@ -59,7 +63,7 @@ export function Roster({ team, season }) {
 }
 
 const groupsFor = (data, team, season, source) =>
-  source ? source.groups(data, season) : rosterGroups(data)
+  source ? source.groups(data, season, team) : rosterGroups(data)
 
 function RosterBody({ data, team, season, query, source }) {
   const groups = useMemo(
