@@ -317,10 +317,9 @@ export function boxscore(payload, espnTeamId, sport) {
   if (competitors.length === 0) return null
 
   const us = competitors.find((c) => String(c.team?.id) === String(espnTeamId)) ?? competitors[0]
-  const them = competitors.find((c) => c !== us) ?? null
 
   // Away team on top, the way a boxscore is always printed.
-  const ordered = [...competitors].sort((a, b) => (a.homeAway === 'home' ? 1 : -1))
+  const ordered = [...competitors].sort((a) => (a.homeAway === 'home' ? 1 : -1))
 
   const periods = Math.max(0, ...competitors.map((c) => (c.linescores ?? []).length))
   // Hits and errors are a baseball thing; the column only appears if ESPN sent it.
@@ -347,7 +346,7 @@ export function boxscore(payload, espnTeamId, sport) {
     periodLabels: periodLabels(sport, periods),
     rows,
     hasHitsErrors,
-    statGroups: pairStats(payload?.boxscore?.teams ?? [], us, them),
+    statGroups: pairStats(payload?.boxscore?.teams ?? [], us),
     playerTables: playerTables(payload?.boxscore?.players ?? [], us),
     info: gameInfo(payload?.gameInfo),
   }
@@ -403,7 +402,7 @@ function playerTables(sides, us) {
 const statLabel = (s) => s.label ?? s.displayName ?? s.shortDisplayName ?? s.name
 
 /** Line up each team's statistics against the other's, keeping ESPN's order. */
-function pairStats(teams, us, them) {
+function pairStats(teams, us) {
   const ourStats = teams.find((t) => String(t.team?.id) === String(us?.team?.id))
   const theirStats = teams.find((t) => t !== ourStats) ?? null
   if (!ourStats) return []

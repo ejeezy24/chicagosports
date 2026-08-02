@@ -2,7 +2,7 @@ import { Fragment, memo, useId, useMemo, useState } from 'react'
 import { getSchedule, getScoreboard } from '../api.js'
 import { scheduleEvents, recordFromGames, scoreboardScores, withLiveScores } from '../espn.js'
 import { formatDate, formatTime, isSameDay, monthKey } from '../format.js'
-import { seasonLabel } from '../seasons.js'
+import { currentSeasonFor, seasonLabel } from '../seasons.js'
 import { useAsync } from '../useAsync.js'
 import { useLivePoll } from '../useLivePoll.js'
 import { Async, Panel } from './ui.jsx'
@@ -11,7 +11,12 @@ import { Venue } from './Venue.jsx'
 
 export function Schedule({ team, season }) {
   const [seasonType, setSeasonType] = useState(2)
-  const [newestFirst, setNewestFirst] = useState(false)
+  // A current-season visitor normally wants the latest result or next fixture,
+  // not an October game at the bottom of a long list. Older seasons remain a
+  // chronological archive by default.
+  const [newestFirst, setNewestFirst] = useState(
+    () => Number(season) === Number(currentSeasonFor(team)),
+  )
   const state = useAsync(
     () => getSchedule(team, season, seasonType),
     [team.key, season, seasonType],
@@ -50,12 +55,21 @@ export function Schedule({ team, season }) {
   )
 
   const types = team.seasonTypes
+  const hasToday = withScores.some((game) => isSameDay(game.date))
+  const jumpToToday = () => {
+    document.querySelector('.game.today')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
 
   return (
     <Panel
       title={`${seasonLabel(team, season)} schedule`}
       aside={
         <div className="panel-controls">
+          {hasToday ? (
+            <button className="order-toggle" onClick={jumpToToday}>
+              Today
+            </button>
+          ) : null}
           <button
             className="order-toggle"
             onClick={() => setNewestFirst((v) => !v)}

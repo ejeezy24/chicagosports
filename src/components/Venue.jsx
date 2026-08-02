@@ -124,21 +124,22 @@ export function Venue({ name, children }) {
   if (!venue) return label
 
   return (
-    <span
-      ref={ref}
-      className={`venue-tag${open ? ' is-open' : ''}`}
-      tabIndex={0}
-      role="button"
-      aria-label={`${venue.name} — stadium details`}
-      aria-expanded={open}
-      aria-describedby={open ? id : undefined}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
-    >
-      {label}
+    <>
+      <button
+        type="button"
+        ref={ref}
+        className={`venue-tag${open ? ' is-open' : ''}`}
+        aria-label={`${venue.name} — stadium details`}
+        aria-expanded={open}
+        aria-describedby={open ? id : undefined}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+      >
+        {label}
+      </button>
       {open ? <Popover venue={venue} id={id} anchor={ref} /> : null}
-    </span>
+    </>
   )
 }

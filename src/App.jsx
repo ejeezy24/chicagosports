@@ -3,6 +3,7 @@ import { getTeam } from './api.js'
 import { TEAMS, accentFor, teamByKey } from './teams.js'
 import { clampSeason, seasonLabel, seasonOptions } from './seasons.js'
 import { TABS } from './tabs.js'
+import { coverageNote } from './coverage.js'
 import { DEFAULT_TEAM, resolveState } from './urlState.js'
 import { useUrlSync } from './useUrlSync.js'
 import { useAsync } from './useAsync.js'
@@ -47,6 +48,28 @@ export default function App() {
   const [season, setSeason] = useState(initial.season)
   const [tab, setTab] = useState(initial.tab)
   const [includeOlder, setIncludeOlder] = useState(initial.includeOlder)
+
+  const selectTab = useCallback((nextTab) => {
+    setTab(nextTab)
+  }, [])
+
+  const moveTab = useCallback(
+    (event, index) => {
+      const last = TABS.length - 1
+      let nextIndex = null
+      if (event.key === 'ArrowRight') nextIndex = index === last ? 0 : index + 1
+      if (event.key === 'ArrowLeft') nextIndex = index === 0 ? last : index - 1
+      if (event.key === 'Home') nextIndex = 0
+      if (event.key === 'End') nextIndex = last
+      if (nextIndex === null) return
+
+      event.preventDefault()
+      const nextTab = TABS[nextIndex].id
+      selectTab(nextTab)
+      requestAnimationFrame(() => document.getElementById(`tab-${nextTab}`)?.focus())
+    },
+    [selectTab],
+  )
 
   // Back and forward hand us a fully resolved state; applying it in one go keeps
   // React's batching from letting the effects below see a half-updated triple.
@@ -97,6 +120,7 @@ export default function App() {
   )
 
   const accent = accentFor(team)
+  const archiveCoverage = coverageNote(team, season)
 
   return (
     <div className="app" style={{ '--team': accent }}>
@@ -147,15 +171,25 @@ export default function App() {
             <Venue name={team.venue} />
           </span>
         </div>
+
+        {archiveCoverage ? (
+          <div className="coverage" role="status">
+            <strong>{archiveCoverage.label}</strong> {archiveCoverage.detail}
+          </div>
+        ) : null}
       </div>
 
       <div className="tabs" role="tablist">
-        {TABS.map((t) => (
+        {TABS.map((t, index) => (
           <button
             key={t.id}
+            id={`tab-${t.id}`}
             role="tab"
             aria-selected={tab === t.id}
-            onClick={() => setTab(t.id)}
+            aria-controls={`panel-${t.id}`}
+            tabIndex={tab === t.id ? 0 : -1}
+            onClick={() => selectTab(t.id)}
+            onKeyDown={(event) => moveTab(event, index)}
           >
             {t.label}
           </button>
@@ -163,6 +197,7 @@ export default function App() {
       </div>
 
       <main>
+        <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} tabIndex={-1}>
         {/* Keyed so switching team or season remounts panels with clean state. */}
         {tab === 'schedule' && (
           <Schedule key={`sch-${team.key}-${season}`} team={team} season={season} />
@@ -179,10 +214,11 @@ export default function App() {
         {tab === 'standings' && (
           <Standings key={`std-${team.key}-${season}`} team={team} season={season} />
         )}
+        </div>
       </main>
 
       <footer className="foot">
-        Data from ESPN&apos;s public endpoints · times shown in Chicago time
+        Data from ESPN, MLB, the NHL, and nflverse · coverage varies by era · times shown in Chicago time
         <br />
         Unofficial and unaffiliated with ESPN or any club.
       </footer>
