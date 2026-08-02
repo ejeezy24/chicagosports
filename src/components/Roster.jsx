@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
-import { getRoster } from '../api.js'
+import { getRoster, isHistorical } from '../api.js'
 import { rosterCoach, rosterGroups, rosterSeason } from '../espn.js'
+import { mlbRosterGroups } from '../players.js'
 import { seasonLabel } from '../seasons.js'
 import { useAsync } from '../useAsync.js'
 import { Async, Panel } from './ui.jsx'
@@ -8,6 +9,10 @@ import { Async, Panel } from './ui.jsx'
 export function Roster({ team, season }) {
   const [query, setQuery] = useState('')
   const state = useAsync(() => getRoster(team, season), [team.key, season])
+
+  // Baseball history comes from MLB and arrives in a different payload; see
+  // getRoster.
+  const fromMlb = team.sport === 'baseball' && isHistorical(team, season)
 
   return (
     <Panel
@@ -26,19 +31,38 @@ export function Roster({ team, season }) {
       <Async
         state={state}
         what="the roster"
-        isEmpty={(d) => rosterGroups(d).length === 0}
-        empty={`No roster published for ${seasonLabel(team, season)}.`}
+        isEmpty={(d) => groupsFor(d, team, season, fromMlb).length === 0}
+        empty={
+          isHistorical(team, season)
+            ? `ESPN doesn't publish ${team.leagueLabel} rosters for past seasons, so there is no ${seasonLabel(team, season)} squad to show. Its endpoints either come back empty or return today's roster, which would be worse than nothing.`
+            : `No roster published for ${seasonLabel(team, season)}.`
+        }
       >
-        {(data) => <RosterBody data={data} team={team} season={season} query={query} />}
+        {(data) => (
+          <RosterBody
+            data={data}
+            team={team}
+            season={season}
+            query={query}
+            fromMlb={fromMlb}
+          />
+        )}
       </Async>
     </Panel>
   )
 }
 
-function RosterBody({ data, team, season, query }) {
-  const groups = useMemo(() => rosterGroups(data), [data])
-  const returned = rosterSeason(data)
-  const coach = rosterCoach(data)
+const groupsFor = (data, team, season, fromMlb) =>
+  fromMlb ? mlbRosterGroups(data, season) : rosterGroups(data)
+
+function RosterBody({ data, team, season, query, fromMlb }) {
+  const groups = useMemo(
+    () => groupsFor(data, team, season, fromMlb),
+    [data, team, season, fromMlb],
+  )
+  // MLB's payload is season-scoped by construction, so only ESPN's can disagree.
+  const returned = fromMlb ? null : rosterSeason(data)
+  const coach = fromMlb ? null : rosterCoach(data)
 
   const needle = query.trim().toLowerCase()
   const filtered = groups
@@ -64,8 +88,11 @@ function RosterBody({ data, team, season, query }) {
 
   return (
     <>
-      {(mismatch || coach) && (
+      {(mismatch || coach || fromMlb) && (
         <div className="note">
+          {fromMlb
+            ? `Everyone who appeared for the club in ${seasonLabel(team, season)}, from MLB — ESPN doesn't publish past rosters. `
+            : ''}
           {mismatch
             ? `ESPN returned its ${returned.label ?? returned.year} roster — historical rosters aren't published for every league, so this may not be the ${seasonLabel(team, season)} squad. `
             : ''}

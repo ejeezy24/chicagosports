@@ -72,12 +72,12 @@ ESPN's public (undocumented, unauthenticated) endpoints:
 | Boxscore | `…/{sport}/{league}/summary?event={gameId}` |
 | Player stats (not baseball) | `site.web.api.espn.com/apis/common/v3/sports/{sport}/{league}/teams/{id}/roster?season={year}` |
 
-### Baseball player stats come from MLB, not ESPN
+### Baseball rosters and player stats come from MLB, not ESPN
 
-The one place the app reaches outside ESPN. ESPN publishes season splits for
-baseball only for players who *qualify* — three or four names out of a 26-man
-roster — which makes for an empty-looking table. MLB's own public API returns
-the entire active roster with statistics in a single request:
+The one place the app reaches outside ESPN, for two reasons. ESPN publishes
+season splits for baseball only for players who *qualify* — three or four names
+out of a 26-man roster — and it has no historical rosters for anyone. MLB's own
+public API has both, and returns a whole roster with statistics in one request:
 
 ```
 statsapi.mlb.com/api/v1/teams/{mlbId}/roster
@@ -120,9 +120,28 @@ which season is "current" per league, since their calendars don't line up.
 
 The dropdown starts at each league's modern era by default; tick **Show seasons
 back to …** to reach the older ones. Coverage thins out the further back you go
-and varies by league — that's ESPN's archive, not a bug in the app. Historical
-rosters in particular aren't published for every league; when ESPN answers with
-the current roster instead, the app says so rather than mislabelling it.
+and varies by league — that's the archive, not a bug in the app.
+
+### Past seasons
+
+Schedules, scores, boxscores, team stats and standings all go back as far as the
+dropdown allows. Rosters are the exception, because **ESPN does not serve
+historical rosters at all**: its site endpoint answers `200` with an empty
+athlete list for any past season, and its other two return the *current* squad
+whatever year you ask for — the season segment is decorative. Asking for the
+2015 Bulls gets you today's Bulls.
+
+So the app splits by sport:
+
+- **Baseball** goes to MLB's API for past seasons, which does have them — the
+  2015 Cubs come back as the 50 players who actually appeared, with each one's
+  age *that season*. Player statistics come from there too.
+- **The other three leagues** say so, and show nothing. Presenting today's squad
+  as a 2015 roster would be worse than an empty panel.
+
+The player statistics panel carries the same caveat for those leagues: for a
+past season it is the current squad's numbers for that year, earned wherever
+they were playing, and it says as much rather than implying otherwise.
 
 ## Layout
 

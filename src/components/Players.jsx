@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getPlayerStats } from '../api.js'
+import { getPlayerStats, isHistorical } from '../api.js'
 import { espnPlayerStats, mlbPlayerStats } from '../players.js'
 import { seasonLabel } from '../seasons.js'
 import { useAsync } from '../useAsync.js'
@@ -17,8 +17,23 @@ export function Players({ team, season }) {
   const groupsFrom = (data) =>
     team.sport === 'baseball' ? mlbPlayerStats(data, team.mlbId) : espnPlayerStats(data)
 
+  // ESPN's roster endpoint ignores the season it's given and always returns the
+  // current squad, so for a past season these are the players who are here now,
+  // showing what they did that year — wherever they were. Saying so is the only
+  // honest way to show it. Baseball comes from MLB and is genuinely
+  // season-scoped, so it needs no such warning.
+  const currentSquadOnly = team.sport !== 'baseball' && isHistorical(team, season)
+
   return (
-    <Panel title={`${seasonLabel(team, season)} player statistics`} aside="Click a column to sort">
+    <Panel
+      title={`${seasonLabel(team, season)} player statistics`}
+      aside="Click a column to sort"
+      note={
+        currentSquadOnly
+          ? `ESPN doesn't publish past ${team.leagueLabel} rosters, so this is the current squad's ${seasonLabel(team, season)} numbers — earned wherever they played that year. Players who have since left the club aren't here.`
+          : null
+      }
+    >
       <Async
         state={state}
         what="player statistics"

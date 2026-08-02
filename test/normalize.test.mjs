@@ -22,7 +22,7 @@ import { readdir, stat } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { IMAGERY_CREDIT, VENUES, venueByName } from '../src/venues.js'
-import { espnPlayerStats, mlbPlayerStats } from '../src/players.js'
+import { espnPlayerStats, mlbPlayerStats, mlbRosterGroups } from '../src/players.js'
 
 const cubs = teamByKey('cubs')
 const bulls = teamByKey('bulls')
@@ -671,6 +671,65 @@ test('MLB player stats pick the split for the club being viewed', () => {
   assert.equal(row.values[pitching.columns.indexOf('W')], '1')
   // Stats the payload doesn't carry show as a gap, not a zero.
   assert.equal(row.values[pitching.columns.indexOf('ERA')], '—')
+})
+
+test('an MLB roster becomes the same shape ESPN rosters do', () => {
+  const groups = mlbRosterGroups(
+    {
+      roster: [
+        null,
+        {
+          person: {
+            id: 570489,
+            fullName: 'Arismendy Alcántara',
+            birthDate: '1991-10-29',
+            height: "5' 10\"",
+            weight: 170,
+            birthCity: 'Santo Domingo',
+            birthCountry: 'Dominican Republic',
+            batSide: { code: 'S' },
+            pitchHand: { code: 'R' },
+          },
+          jerseyNumber: '7',
+          position: { abbreviation: '2B', name: 'Second Base', type: 'Infielder' },
+        },
+        {
+          person: { id: 2, fullName: 'Jake Arrieta', birthDate: '1986-03-06' },
+          jerseyNumber: '49',
+          position: { abbreviation: 'P', name: 'Pitcher', type: 'Pitcher' },
+        },
+      ],
+    },
+    2015,
+  )
+
+  // Pitchers lead, the way a baseball roster is printed.
+  assert.deepEqual(groups.map((g) => g.label), ['Pitchers', 'Infielders'])
+
+  const player = groups[1].athletes[0]
+  assert.equal(player.name, 'Arismendy Alcántara')
+  assert.equal(player.jersey, '7')
+  assert.equal(player.weight, '170 lbs')
+  assert.equal(player.birthplace, 'Santo Domingo, Dominican Republic')
+  assert.match(player.headshot, /570489/)
+
+  // Age is as of the season being viewed, not today — StatsAPI only carries
+  // the player's current age, which on a 2015 roster is a decade out.
+  assert.equal(player.age, 23)
+  assert.equal(groups[0].athletes[0].age, 29)
+})
+
+test('MLB roster age is right either side of a birthday', () => {
+  const ageIn = (birthDate, season) =>
+    mlbRosterGroups(
+      { roster: [{ person: { id: 1, fullName: 'X', birthDate }, position: { type: 'Pitcher' } }] },
+      season,
+    )[0].athletes[0].age
+
+  assert.equal(ageIn('1991-01-01', 2015), 24) // birthday already passed by mid-season
+  assert.equal(ageIn('1991-12-31', 2015), 23) // still to come
+  assert.equal(ageIn(null, 2015), null)
+  assert.equal(ageIn('not a date', 2015), null)
 })
 
 test('player stats degrade to nothing rather than throwing', () => {

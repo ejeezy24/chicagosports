@@ -1,4 +1,10 @@
-// Season statistics for a team's players, from two different sources.
+// Rosters and season statistics for a team's players, from two sources.
+//
+// ESPN does not serve historical rosters at all. Its site endpoint answers 200
+// with an empty athlete list for any past season, and its other two return the
+// *current* squad no matter which year is asked for — the season segment is
+// decorative. So for past seasons baseball comes from MLB's API here, and the
+// other three leagues have to say plainly that the data doesn't exist.
 //
 // ESPN's roster endpoint carries season splits for football, basketball and
 // hockey, and describes its own columns — each stat arrives with an
@@ -67,6 +73,80 @@ function splitForTeam(entry, mlbTeamId) {
     splits[0] ??
     null
   )
+}
+
+/** Positions grouped the way a baseball roster is always printed. */
+const MLB_POSITION_ORDER = ['Pitcher', 'Catcher', 'Infielder', 'Outfielder']
+
+const PLURAL = {
+  Pitcher: 'Pitchers',
+  Catcher: 'Catchers',
+  Infielder: 'Infielders',
+  Outfielder: 'Outfielders',
+}
+
+/** How old someone was during a given season, rather than how old they are now. */
+function ageDuring(birthDate, season) {
+  if (!birthDate) return null
+  const born = new Date(birthDate)
+  if (Number.isNaN(born.getTime())) return null
+  // Midway through the year, so a season reads as one age rather than two.
+  const mid = new Date(Date.UTC(Number(season), 5, 30))
+  let age = mid.getUTCFullYear() - born.getUTCFullYear()
+  const monthDiff = mid.getUTCMonth() - born.getUTCMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && mid.getUTCDate() < born.getUTCDate())) age -= 1
+  return age > 0 && age < 120 ? age : null
+}
+
+/**
+ * MLB StatsAPI roster, hydrated with each person, in the same shape `rosterGroups`
+ * produces from ESPN — so the roster view doesn't care where it came from.
+ *
+ * Age is computed for the season being viewed. StatsAPI only carries the
+ * player's age today, which on a 2015 roster would be a decade out.
+ */
+export function mlbRosterGroups(payload, season) {
+  const roster = (payload?.roster ?? []).filter(Boolean)
+  if (roster.length === 0) return []
+
+  const buckets = new Map()
+
+  for (const entry of roster) {
+    const person = entry.person ?? {}
+    const type = entry.position?.type ?? 'Other'
+    const label = PLURAL[type] ?? type
+
+    if (!buckets.has(label)) buckets.set(label, [])
+    buckets.get(label).push({
+      id: person.id ?? person.fullName,
+      name: person.fullName ?? 'Unknown',
+      jersey: entry.jerseyNumber ?? person.primaryNumber ?? null,
+      position: entry.position?.abbreviation ?? null,
+      positionName: entry.position?.name ?? null,
+      height: person.height ?? null,
+      weight: person.weight ? `${person.weight} lbs` : null,
+      age: ageDuring(person.birthDate, season),
+      college: null, // StatsAPI doesn't carry it
+      birthplace: [person.birthCity, person.birthStateProvince ?? person.birthCountry]
+        .filter(Boolean)
+        .join(', '),
+      headshot: person.id
+        ? `https://midfield.mlbstatic.com/v1/people/${person.id}/spots/120`
+        : null,
+      bats: person.batSide?.code ?? null,
+      throws: person.pitchHand?.code ?? null,
+      status: entry.status?.description ?? null,
+    })
+  }
+
+  const order = (label) => {
+    const i = MLB_POSITION_ORDER.findIndex((t) => (PLURAL[t] ?? t) === label)
+    return i === -1 ? MLB_POSITION_ORDER.length : i
+  }
+
+  return [...buckets.entries()]
+    .sort((a, b) => order(a[0]) - order(b[0]))
+    .map(([label, athletes]) => ({ label, athletes }))
 }
 
 /** MLB StatsAPI: `teams/{id}/roster` hydrated with each person's season stats. */

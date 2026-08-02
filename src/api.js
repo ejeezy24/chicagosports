@@ -6,6 +6,8 @@
 // fallback served in place of JSON), we retry the same path directly against
 // ESPN, which does send permissive CORS headers.
 
+import { currentSeasonFor } from './seasons.js'
+
 const HOSTS = {
   site: { prefix: '/espn', direct: 'https://site.api.espn.com' },
   web: { prefix: '/espnweb', direct: 'https://site.web.api.espn.com' },
@@ -109,8 +111,23 @@ export function getSchedule(team, season, seasonType = 2) {
  * gave us, and the UI surfaces that rather than pretending.
  */
 export function getRoster(team, season) {
+  // ESPN answers 200 with no athletes for any past season, so baseball history
+  // comes from MLB instead. The current roster still comes from ESPN, which
+  // carries college and headshots that StatsAPI doesn't.
+  if (team.sport === 'baseball' && isHistorical(team, season)) {
+    return request('mlb', `/api/v1/teams/${team.mlbId}/roster`, {
+      rosterType: 'fullSeason',
+      season,
+      hydrate: 'person',
+    })
+  }
+
   return request('site', `${leaguePath(team)}/teams/${team.espnId}/roster`, { season })
 }
+
+/** True for any season that has already finished. */
+export const isHistorical = (team, season) =>
+  Number(season) !== Number(currentSeasonFor(team))
 
 /**
  * Season team statistics (totals, per-game, league ranks).
@@ -145,7 +162,8 @@ export function getSummary(team, eventId) {
 export function getPlayerStats(team, season) {
   if (team.sport === 'baseball') {
     return request('mlb', `/api/v1/teams/${team.mlbId}/roster`, {
-      rosterType: 'active',
+      // A finished season wants everyone who appeared, not today's 26.
+      rosterType: isHistorical(team, season) ? 'fullSeason' : 'active',
       season,
       // One request instead of one per player.
       hydrate: `person(stats(type=season,season=${season},gameType=R))`,
