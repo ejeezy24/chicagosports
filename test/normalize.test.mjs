@@ -32,6 +32,7 @@ import {
   parseCsv,
 } from '../src/players.js'
 import { DEFAULT_TEAM, parseParams, resolveState, toSearch } from '../src/urlState.js'
+import { ownDivisionFirst } from '../src/espn.js'
 
 const cubs = teamByKey('cubs')
 const bulls = teamByKey('bulls')
@@ -999,6 +1000,31 @@ test('standings flatten out of the conference/division tree', () => {
   assert.equal(groups[0].name, 'NL Central')
   assert.equal(groups[0].rows[0].team, 'Chicago Cubs')
   assert.equal(groups[0].rows[0].stats.length, 2)
+})
+
+test("the club's own division leads the standings", () => {
+  const groups = [
+    { name: 'AL East', rows: [{ id: '10' }] },
+    { name: 'AL Central', rows: [{ id: '4' }, { id: '5' }] },
+    { name: 'NL Central', rows: [{ id: '16' }] },
+  ]
+
+  // The rest keep ESPN's order behind it.
+  assert.deepEqual(ownDivisionFirst(groups, '16').map((g) => g.name), [
+    'NL Central',
+    'AL East',
+    'AL Central',
+  ])
+  assert.deepEqual(ownDivisionFirst(groups, '4').map((g) => g.name), [
+    'AL Central',
+    'AL East',
+    'NL Central',
+  ])
+
+  // Already first, or not found at all: leave well alone.
+  assert.deepEqual(ownDivisionFirst(groups, '10'), groups)
+  assert.deepEqual(ownDivisionFirst(groups, '999'), groups)
+  assert.deepEqual(ownDivisionFirst([], '16'), [])
 })
 
 test('empty standings produce no groups', () => {

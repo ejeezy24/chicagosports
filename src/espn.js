@@ -403,6 +403,17 @@ export function standingsGroups(payload) {
   return out.filter((g) => g.rows.length > 0)
 }
 
+/**
+ * The whole league is worth showing — it's how you see where the club sits
+ * against everyone else — but its own division shouldn't be the fourth table
+ * down. Lead with the division the club is in and leave the rest in order.
+ */
+export function ownDivisionFirst(groups, espnTeamId) {
+  const i = groups.findIndex((g) => g.rows.some((r) => String(r.id) === String(espnTeamId)))
+  if (i <= 0) return groups
+  return [groups[i], ...groups.slice(0, i), ...groups.slice(i + 1)]
+}
+
 function walkStandings(node, out, depth) {
   if (!node || typeof node !== 'object' || depth > 6) return
   const entries = node.standings?.entries

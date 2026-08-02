@@ -207,11 +207,16 @@ const nflUnit = (position) =>
   Object.keys(NFL_UNIT).find((unit) => NFL_UNIT[unit].includes(position)) ?? 'Other'
 
 /**
- * nflverse roster CSV, one file per season, league-wide — filtered to one club
- * and reshaped into what the roster view expects.
+ * nflverse rows for one club, already filtered by api/nfl-roster.js, reshaped
+ * into what the roster view expects.
  */
-export function nflRosterGroups(text, teamAbbr, season) {
-  const rows = parseCsv(text, (r) => r.team === teamAbbr)
+export function nflRosterGroups(payload, teamAbbr, season) {
+  // Accept the raw CSV too, so the parser stays exercised and the shape isn't
+  // pinned to one caller.
+  const rows =
+    typeof payload === 'string'
+      ? parseCsv(payload, (r) => r.team === teamAbbr)
+      : (payload?.players ?? [])
   if (rows.length === 0) return []
 
   const buckets = new Map()

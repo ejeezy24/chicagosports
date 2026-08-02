@@ -16,14 +16,9 @@ const HOSTS = {
   // See players.js for why.
   mlb: { prefix: '/mlbstats', direct: 'https://statsapi.mlb.com' },
   nhl: { prefix: '/nhlweb', direct: 'https://api-web.nhle.com' },
-  // Football history is a community dataset published as GitHub release assets,
-  // which redirect to a signed URL on a host that sends no CORS headers. The
-  // redirect has to be followed server-side, so there is no direct fallback.
-  nflverse: {
-    prefix: '/nflverse',
-    direct: 'https://github.com/nflverse/nflverse-data/releases/download',
-    proxyOnly: true,
-  },
+  // Our own serverless function rather than an upstream — football history has
+  // to be fetched and trimmed server-side. See api/nfl-roster.js.
+  own: { prefix: '', direct: '', proxyOnly: true },
 }
 
 /** The NHL keys a season by both of its years: 2015 -> '20142015'. */
@@ -150,8 +145,8 @@ export function getRoster(team, season) {
       return request('nhl', `/v1/roster/${team.abbr}/${nhlSeason(season)}`)
     }
     if (team.sport === 'football') {
-      // League-wide for the season; the club's rows are picked out client-side.
-      return request('nflverse', `/rosters/roster_${season}.csv`, {}, { text: true })
+      // Trimmed to this club before it leaves the server; see api/nfl-roster.js.
+      return request('own', '/api/nfl-roster', { season, team: team.abbr })
     }
   }
 

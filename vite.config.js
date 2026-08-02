@@ -27,19 +27,32 @@ const proxy = {
   // The leagues' own APIs, for the past seasons ESPN doesn't serve.
   '/mlbstats': espnProxy('https://statsapi.mlb.com', '/mlbstats'),
   '/nhlweb': espnProxy('https://api-web.nhle.com', '/nhlweb'),
-  // nflverse publishes as GitHub release assets, which 302 to a signed URL on
-  // another host that sends no CORS headers — so this has to be followed
-  // server-side. The browser cannot fetch it directly at all.
-  '/nflverse': {
-    ...espnProxy('https://github.com', '/nflverse'),
-    followRedirects: true,
-    rewrite: (p) =>
-      p.replace(/^\/nflverse/, '/nflverse/nflverse-data/releases/download'),
-  },
+}
+
+/**
+ * `api/` holds Vercel serverless functions, which `vite dev` knows nothing
+ * about. Running the very same handler as dev middleware keeps the two honest:
+ * a rewrite that worked in dev and returned a bare 302 in production is exactly
+ * how the NFL roster broke the first time.
+ */
+function vercelFunctions() {
+  return {
+    name: 'vercel-functions-in-dev',
+    configureServer(server) {
+      server.middlewares.use('/api/nfl-roster', async (req, res, next) => {
+        try {
+          const { default: handler } = await server.ssrLoadModule('/api/nfl-roster.js')
+          await handler(req, res)
+        } catch (err) {
+          next(err)
+        }
+      })
+    },
+  }
 }
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), vercelFunctions()],
   server: { proxy },
   preview: { proxy },
 })

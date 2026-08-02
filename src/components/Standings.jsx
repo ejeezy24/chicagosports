@@ -1,5 +1,5 @@
 import { getStandings } from '../api.js'
-import { standingsGroups } from '../espn.js'
+import { ownDivisionFirst, standingsGroups } from '../espn.js'
 import { seasonLabel } from '../seasons.js'
 import { useAsync } from '../useAsync.js'
 import { Async, Panel } from './ui.jsx'
@@ -35,7 +35,7 @@ export function Standings({ team, season }) {
         empty={`No standings published for ${seasonLabel(team, season)}.`}
       >
         {(data) =>
-          standingsGroups(data).map((group) => (
+          ownDivisionFirst(standingsGroups(data), team.espnId).map((group) => (
             <StandingsTable key={group.name} group={group} espnTeamId={team.espnId} />
           ))
         }
