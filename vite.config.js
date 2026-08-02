@@ -24,8 +24,9 @@ const proxy = {
   '/espnweb': espnProxy('https://site.web.api.espn.com', '/espnweb'),
   '/espncore': espnProxy('https://sports.core.api.espn.com', '/espncore'),
   '/espn': espnProxy('https://site.api.espn.com', '/espn'),
-  // MLB's own API, for baseball player statistics — see src/players.js.
+  // The leagues' own APIs, for the past seasons ESPN doesn't serve.
   '/mlbstats': espnProxy('https://statsapi.mlb.com', '/mlbstats'),
+  '/nhlweb': espnProxy('https://api-web.nhle.com', '/nhlweb'),
 }
 
 export default defineConfig({

@@ -22,7 +22,13 @@ import { readdir, stat } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { IMAGERY_CREDIT, VENUES, venueByName } from '../src/venues.js'
-import { espnPlayerStats, mlbPlayerStats, mlbRosterGroups } from '../src/players.js'
+import {
+  espnPlayerStats,
+  mlbPlayerStats,
+  mlbRosterGroups,
+  nhlPlayerStats,
+  nhlRosterGroups,
+} from '../src/players.js'
 import { DEFAULT_TEAM, parseParams, resolveState, toSearch } from '../src/urlState.js'
 
 const cubs = teamByKey('cubs')
@@ -731,6 +737,112 @@ test('MLB roster age is right either side of a birthday', () => {
   assert.equal(ageIn('1991-12-31', 2015), 23) // still to come
   assert.equal(ageIn(null, 2015), null)
   assert.equal(ageIn('not a date', 2015), null)
+})
+
+test('an NHL roster becomes the same shape as the others', () => {
+  const groups = nhlRosterGroups(
+    {
+      forwards: [
+        null,
+        {
+          id: 1,
+          firstName: { default: 'Bryan' },
+          lastName: { default: 'Bickell' },
+          sweaterNumber: 29,
+          positionCode: 'L',
+          shootsCatches: 'L',
+          heightInInches: 76,
+          weightInPounds: 223,
+          birthDate: '1986-03-09',
+          birthCity: { default: 'Bowmanville' },
+          birthStateProvince: { default: 'ON' },
+          birthCountry: 'CAN',
+          headshot: 'https://example/1.png',
+        },
+      ],
+      defensemen: [],
+      goalies: [
+        {
+          id: 2,
+          firstName: { default: 'Corey' },
+          lastName: { default: 'Crawford' },
+          positionCode: 'G',
+          heightInInches: 74,
+          birthDate: '1984-12-31',
+        },
+      ],
+    },
+    2015,
+  )
+
+  // The empty group is dropped; names come out of their localised wrappers.
+  assert.deepEqual(groups.map((g) => g.label), ['Forwards', 'Goalies'])
+
+  const p = groups[0].athletes[0]
+  assert.equal(p.name, 'Bryan Bickell')
+  assert.equal(p.jersey, 29)
+  assert.equal(p.height, `6' 4"`, 'inches become feet and inches')
+  assert.equal(p.weight, '223 lbs')
+  assert.equal(p.age, 29, 'age during the season, not today')
+  assert.equal(p.birthplace, 'Bowmanville, ON')
+  assert.equal(p.throws, 'L')
+  assert.equal(p.bats, null, 'hockey reports one hand, not two')
+
+  // Missing height/weight leave gaps rather than nonsense.
+  assert.equal(groups[1].athletes[0].weight, null)
+})
+
+test('NHL skaters and goalies become separate tables, formatted', () => {
+  const tables = nhlPlayerStats({
+    skaters: [
+      {
+        playerId: 1,
+        firstName: { default: 'Marian' },
+        lastName: { default: 'Hossa' },
+        positionCode: 'R',
+        gamesPlayed: 82,
+        goals: 22,
+        assists: 39,
+        points: 61,
+        shots: 247,
+        shootingPctg: 0.0891,
+        avgTimeOnIcePerGame: 1113,
+        faceoffWinPctg: 0.5714,
+      },
+    ],
+    goalies: [
+      {
+        playerId: 2,
+        firstName: { default: 'Corey' },
+        lastName: { default: 'Crawford' },
+        gamesPlayed: 57,
+        wins: 32,
+        goalsAgainstAverage: 2.2712,
+        savePercentage: 0.9236,
+      },
+    ],
+  })
+
+  assert.deepEqual(tables.map((t) => t.name), ['Skaters', 'Goalies'])
+
+  const skater = tables[0]
+  const at = (label) => skater.rows[0].values[skater.columns.indexOf(label)]
+  assert.equal(skater.rows[0].name, 'Marian Hossa')
+  assert.equal(at('P'), '61')
+  // Rates and ice time are unreadable raw: 0.0891 and 1113 seconds.
+  assert.equal(at('S%'), '8.9%')
+  assert.equal(at('FO%'), '57.1%')
+  assert.equal(at('TOI/G'), '18:33')
+
+  const goalie = tables[1]
+  const gAt = (label) => goalie.rows[0].values[goalie.columns.indexOf(label)]
+  assert.equal(gAt('GAA'), '2.27')
+  assert.equal(gAt('SV%'), '.924', 'save percentage is written without the leading zero')
+  assert.equal(gAt('SO'), '—', 'a stat the payload omits is a gap, not a zero')
+
+  // An empty side produces no table at all.
+  assert.deepEqual(nhlPlayerStats({ skaters: [], goalies: [] }), [])
+  assert.deepEqual(nhlPlayerStats(null), [])
 })
 
 test('player stats degrade to nothing rather than throwing', () => {

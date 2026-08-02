@@ -1,18 +1,24 @@
 import { useMemo, useState } from 'react'
 import { getRoster, isHistorical } from '../api.js'
 import { rosterCoach, rosterGroups, rosterSeason } from '../espn.js'
-import { mlbRosterGroups } from '../players.js'
+import { mlbRosterGroups, nhlRosterGroups } from '../players.js'
 import { seasonLabel } from '../seasons.js'
 import { useAsync } from '../useAsync.js'
 import { Async, Panel } from './ui.jsx'
+
+/** Which league publishes its own history, and what it's called on screen. */
+const LEAGUE_SOURCE = {
+  baseball: { label: 'MLB', groups: mlbRosterGroups },
+  hockey: { label: 'the NHL', groups: nhlRosterGroups },
+}
 
 export function Roster({ team, season }) {
   const [query, setQuery] = useState('')
   const state = useAsync(() => getRoster(team, season), [team.key, season])
 
-  // Baseball history comes from MLB and arrives in a different payload; see
-  // getRoster.
-  const fromMlb = team.sport === 'baseball' && isHistorical(team, season)
+  // Past seasons come from the league's own API in a different payload shape;
+  // see getRoster. Football and basketball have no such source.
+  const source = isHistorical(team, season) ? LEAGUE_SOURCE[team.sport] : null
 
   return (
     <Panel
@@ -31,7 +37,7 @@ export function Roster({ team, season }) {
       <Async
         state={state}
         what="the roster"
-        isEmpty={(d) => groupsFor(d, team, season, fromMlb).length === 0}
+        isEmpty={(d) => groupsFor(d, team, season, source).length === 0}
         empty={
           isHistorical(team, season)
             ? `ESPN doesn't publish ${team.leagueLabel} rosters for past seasons, so there is no ${seasonLabel(team, season)} squad to show. Its endpoints either come back empty or return today's roster, which would be worse than nothing.`
@@ -44,7 +50,7 @@ export function Roster({ team, season }) {
             team={team}
             season={season}
             query={query}
-            fromMlb={fromMlb}
+            source={source}
           />
         )}
       </Async>
@@ -52,17 +58,17 @@ export function Roster({ team, season }) {
   )
 }
 
-const groupsFor = (data, team, season, fromMlb) =>
-  fromMlb ? mlbRosterGroups(data, season) : rosterGroups(data)
+const groupsFor = (data, team, season, source) =>
+  source ? source.groups(data, season) : rosterGroups(data)
 
-function RosterBody({ data, team, season, query, fromMlb }) {
+function RosterBody({ data, team, season, query, source }) {
   const groups = useMemo(
-    () => groupsFor(data, team, season, fromMlb),
-    [data, team, season, fromMlb],
+    () => groupsFor(data, team, season, source),
+    [data, team, season, source],
   )
   // MLB's payload is season-scoped by construction, so only ESPN's can disagree.
-  const returned = fromMlb ? null : rosterSeason(data)
-  const coach = fromMlb ? null : rosterCoach(data)
+  const returned = source ? null : rosterSeason(data)
+  const coach = source ? null : rosterCoach(data)
 
   const needle = query.trim().toLowerCase()
   const filtered = groups
@@ -88,10 +94,10 @@ function RosterBody({ data, team, season, query, fromMlb }) {
 
   return (
     <>
-      {(mismatch || coach || fromMlb) && (
+      {(mismatch || coach || source) && (
         <div className="note">
-          {fromMlb
-            ? `Everyone who appeared for the club in ${seasonLabel(team, season)}, from MLB — ESPN doesn't publish past rosters. `
+          {source
+            ? `The ${seasonLabel(team, season)} squad, from ${source.label} — ESPN doesn't publish past rosters. `
             : ''}
           {mismatch
             ? `ESPN returned its ${returned.label ?? returned.year} roster — historical rosters aren't published for every league, so this may not be the ${seasonLabel(team, season)} squad. `
@@ -134,7 +140,8 @@ function PlayerCard({ player: p }) {
     p.height,
     p.weight,
     p.age ? `${p.age} yrs` : null,
-    p.bats && p.throws ? `B/T ${p.bats}/${p.throws}` : null,
+    // Baseball reports both hands; hockey reports the one that matters.
+    p.bats && p.throws ? `B/T ${p.bats}/${p.throws}` : p.throws ? `Shoots ${p.throws}` : null,
     p.college,
     p.birthplace,
   ]

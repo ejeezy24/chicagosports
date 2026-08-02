@@ -149,6 +149,125 @@ export function mlbRosterGroups(payload, season) {
     .map(([label, athletes]) => ({ label, athletes }))
 }
 
+/**
+ * NHL rosters arrive already grouped, and every name is a localised object
+ * (`{ default: 'Baun' }`) rather than a string.
+ */
+const nhlName = (v) => (typeof v === 'string' ? v : (v?.default ?? null))
+
+const NHL_GROUPS = [
+  ['forwards', 'Forwards'],
+  ['defensemen', 'Defensemen'],
+  ['goalies', 'Goalies'],
+]
+
+/** Heights come as inches; the rest of the app shows 6' 2". */
+function feetAndInches(inches) {
+  const n = Number(inches)
+  if (!Number.isFinite(n) || n <= 0) return null
+  return `${Math.floor(n / 12)}' ${n % 12}"`
+}
+
+/** NHL: `api-web.nhle.com/v1/roster/{abbr}/{season}`, in `rosterGroups` shape. */
+export function nhlRosterGroups(payload, season) {
+  return NHL_GROUPS.map(([key, label]) => ({
+    label,
+    athletes: (payload?.[key] ?? []).filter(Boolean).map((p) => ({
+      id: p.id ?? `${nhlName(p.firstName)}-${nhlName(p.lastName)}`,
+      name: [nhlName(p.firstName), nhlName(p.lastName)].filter(Boolean).join(' ') || 'Unknown',
+      jersey: p.sweaterNumber ?? null,
+      position: p.positionCode ?? null,
+      positionName: label.replace(/s$/, ''),
+      height: feetAndInches(p.heightInInches),
+      weight: p.weightInPounds ? `${p.weightInPounds} lbs` : null,
+      age: ageDuring(p.birthDate, season),
+      college: null,
+      birthplace: [nhlName(p.birthCity), p.birthStateProvince ? nhlName(p.birthStateProvince) : p.birthCountry]
+        .filter(Boolean)
+        .join(', '),
+      headshot: p.headshot ?? null,
+      // Skaters shoot, goalies catch; the payload uses one field for both.
+      bats: null,
+      throws: p.shootsCatches ?? null,
+      status: null,
+    })),
+  })).filter((g) => g.athletes.length > 0)
+}
+
+/**
+ * NHL: `club-stats/{abbr}/{season}/2`. Skaters and goalies measure different
+ * things, so they become separate tables rather than one with half the columns
+ * empty.
+ */
+const NHL_SKATER = [
+  ['gamesPlayed', 'GP'],
+  ['goals', 'G'],
+  ['assists', 'A'],
+  ['points', 'P'],
+  ['plusMinus', '+/-'],
+  ['penaltyMinutes', 'PIM'],
+  ['powerPlayGoals', 'PPG'],
+  ['shorthandedGoals', 'SHG'],
+  ['gameWinningGoals', 'GWG'],
+  ['shots', 'S'],
+  ['shootingPctg', 'S%'],
+  ['avgTimeOnIcePerGame', 'TOI/G'],
+  ['faceoffWinPctg', 'FO%'],
+]
+
+const NHL_GOALIE = [
+  ['gamesPlayed', 'GP'],
+  ['gamesStarted', 'GS'],
+  ['wins', 'W'],
+  ['losses', 'L'],
+  ['overtimeLosses', 'OTL'],
+  ['goalsAgainstAverage', 'GAA'],
+  ['savePercentage', 'SV%'],
+  ['shotsAgainst', 'SA'],
+  ['saves', 'SV'],
+  ['goalsAgainst', 'GA'],
+  ['shutouts', 'SO'],
+]
+
+/** Rates come as long decimals (0.9234) and time as seconds. */
+function nhlValue(key, raw) {
+  if (raw === undefined || raw === null) return '—'
+  if (key === 'savePercentage' || key === 'shootingPctg' || key === 'faceoffWinPctg') {
+    const n = Number(raw)
+    if (!Number.isFinite(n)) return String(raw)
+    return key === 'savePercentage' ? n.toFixed(3).replace(/^0/, '') : `${(n * 100).toFixed(1)}%`
+  }
+  if (key === 'avgTimeOnIcePerGame') {
+    const n = Number(raw)
+    if (!Number.isFinite(n)) return String(raw)
+    return `${Math.floor(n / 60)}:${String(Math.round(n % 60)).padStart(2, '0')}`
+  }
+  if (key === 'goalsAgainstAverage') {
+    const n = Number(raw)
+    return Number.isFinite(n) ? n.toFixed(2) : String(raw)
+  }
+  return String(raw)
+}
+
+export function nhlPlayerStats(payload) {
+  const table = (rows, columns, name) => ({
+    name,
+    columns: columns.map(([, label]) => label),
+    rows: (rows ?? []).filter(Boolean).map((p) => ({
+      id: p.playerId ?? `${nhlName(p.firstName)}-${nhlName(p.lastName)}`,
+      name: [nhlName(p.firstName), nhlName(p.lastName)].filter(Boolean).join(' ') || 'Unknown',
+      position: p.positionCode ?? (name === 'Goalies' ? 'G' : null),
+      jersey: null,
+      values: columns.map(([key]) => nhlValue(key, p[key])),
+    })),
+  })
+
+  return [
+    table(payload?.skaters, NHL_SKATER, 'Skaters'),
+    table(payload?.goalies, NHL_GOALIE, 'Goalies'),
+  ].filter((t) => t.rows.length > 0)
+}
+
 /** MLB StatsAPI: `teams/{id}/roster` hydrated with each person's season stats. */
 export function mlbPlayerStats(payload, mlbTeamId) {
   const roster = (payload?.roster ?? []).filter(Boolean)

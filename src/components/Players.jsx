@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { getPlayerStats, isHistorical } from '../api.js'
-import { espnPlayerStats, mlbPlayerStats } from '../players.js'
+import { espnPlayerStats, mlbPlayerStats, nhlPlayerStats } from '../players.js'
 import { seasonLabel } from '../seasons.js'
 import { useAsync } from '../useAsync.js'
 import { Async, Panel } from './ui.jsx'
@@ -14,15 +14,20 @@ import { Async, Panel } from './ui.jsx'
 export function Players({ team, season }) {
   const state = useAsync(() => getPlayerStats(team, season), [team.key, season])
 
-  const groupsFrom = (data) =>
-    team.sport === 'baseball' ? mlbPlayerStats(data, team.mlbId) : espnPlayerStats(data)
+  const past = isHistorical(team, season)
+
+  const groupsFrom = (data) => {
+    if (team.sport === 'baseball') return mlbPlayerStats(data, team.mlbId)
+    if (team.sport === 'hockey' && past) return nhlPlayerStats(data)
+    return espnPlayerStats(data)
+  }
 
   // ESPN's roster endpoint ignores the season it's given and always returns the
   // current squad, so for a past season these are the players who are here now,
   // showing what they did that year — wherever they were. Saying so is the only
-  // honest way to show it. Baseball comes from MLB and is genuinely
-  // season-scoped, so it needs no such warning.
-  const currentSquadOnly = team.sport !== 'baseball' && isHistorical(team, season)
+  // honest way to show it. Baseball and hockey come from their own leagues for
+  // past seasons and are genuinely season-scoped, so they need no such warning.
+  const currentSquadOnly = past && team.sport !== 'baseball' && team.sport !== 'hockey'
 
   return (
     <Panel

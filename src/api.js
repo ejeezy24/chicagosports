@@ -12,10 +12,14 @@ const HOSTS = {
   site: { prefix: '/espn', direct: 'https://site.api.espn.com' },
   web: { prefix: '/espnweb', direct: 'https://site.web.api.espn.com' },
   core: { prefix: '/espncore', direct: 'https://sports.core.api.espn.com' },
-  // Not ESPN: MLB's own public API, used for baseball player statistics only.
-  // See players.js for why baseball can't come from ESPN like the rest.
+  // Not ESPN: the leagues' own APIs, for the past seasons ESPN doesn't serve.
+  // See players.js for why.
   mlb: { prefix: '/mlbstats', direct: 'https://statsapi.mlb.com' },
+  nhl: { prefix: '/nhlweb', direct: 'https://api-web.nhle.com' },
 }
+
+/** The NHL keys a season by both of its years: 2015 -> '20142015'. */
+const nhlSeason = (season) => `${Number(season) - 1}${Number(season)}`
 
 export class ApiError extends Error {
   constructor(message, { status, url, cause } = {}) {
@@ -114,12 +118,17 @@ export function getRoster(team, season) {
   // ESPN answers 200 with no athletes for any past season, so baseball history
   // comes from MLB instead. The current roster still comes from ESPN, which
   // carries college and headshots that StatsAPI doesn't.
-  if (team.sport === 'baseball' && isHistorical(team, season)) {
-    return request('mlb', `/api/v1/teams/${team.mlbId}/roster`, {
-      rosterType: 'fullSeason',
-      season,
-      hydrate: 'person',
-    })
+  if (isHistorical(team, season)) {
+    if (team.sport === 'baseball') {
+      return request('mlb', `/api/v1/teams/${team.mlbId}/roster`, {
+        rosterType: 'fullSeason',
+        season,
+        hydrate: 'person',
+      })
+    }
+    if (team.sport === 'hockey') {
+      return request('nhl', `/v1/roster/${team.abbr}/${nhlSeason(season)}`)
+    }
   }
 
   return request('site', `${leaguePath(team)}/teams/${team.espnId}/roster`, { season })
@@ -160,6 +169,12 @@ export function getSummary(team, eventId) {
  * The other three leagues come from ESPN's roster endpoint, which carries them.
  */
 export function getPlayerStats(team, season) {
+  // Hockey's own API is season-scoped; ESPN's isn't, so use it for past years.
+  // `2` is the regular season.
+  if (team.sport === 'hockey' && isHistorical(team, season)) {
+    return request('nhl', `/v1/club-stats/${team.abbr}/${nhlSeason(season)}/2`)
+  }
+
   if (team.sport === 'baseball') {
     return request('mlb', `/api/v1/teams/${team.mlbId}/roster`, {
       // A finished season wants everyone who appeared, not today's 26.
