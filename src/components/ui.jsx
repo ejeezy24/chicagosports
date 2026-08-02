@@ -55,7 +55,7 @@ export function Empty({ children }) {
   return <div className="state">{children}</div>
 }
 
-export function ErrorState({ error, what }) {
+export function ErrorState({ error, what, onRetry }) {
   return (
     <div className="state error">
       Couldn&apos;t load {what}.
@@ -64,6 +64,11 @@ export function ErrorState({ error, what }) {
         These come straight from ESPN&apos;s public endpoints — older seasons and
         off-season windows are sometimes simply not published.
       </small>
+      {onRetry ? (
+        <button className="retry" onClick={onRetry}>
+          Try again
+        </button>
+      ) : null}
     </div>
   )
 }
@@ -71,7 +76,27 @@ export function ErrorState({ error, what }) {
 /** Renders loading / error / empty for a useAsync result, or the children. */
 export function Async({ state, what, rows, isEmpty, empty, children }) {
   if (state.loading) return <Loading rows={rows} />
-  if (state.error) return <ErrorState error={state.error} what={what} />
+  if (state.error) return <ErrorState error={state.error} what={what} onRetry={state.retry} />
   if (isEmpty?.(state.data)) return <Empty>{empty}</Empty>
-  return children(state.data)
+  return (
+    <>
+      {state.updatedAt ? <UpdatedAt value={state.updatedAt} /> : null}
+      {children(state.data)}
+    </>
+  )
+}
+
+const chicagoTime = new Intl.DateTimeFormat('en-US', {
+  hour: 'numeric',
+  minute: '2-digit',
+  timeZone: 'America/Chicago',
+  timeZoneName: 'short',
+})
+
+function UpdatedAt({ value }) {
+  return (
+    <div className="data-status" role="status">
+      Data refreshed {chicagoTime.format(value)}
+    </div>
+  )
 }

@@ -33,11 +33,20 @@ import {
   nhlRosterGroups,
   parseCsv,
 } from '../src/players.js'
-import { DEFAULT_TEAM, parseParams, resolveState, toSearch } from '../src/urlState.js'
+import { DEFAULT_TEAM, resolveState, toSearch } from '../src/urlState.js'
 import { ownDivisionFirst } from '../src/espn.js'
+import { coverageNote } from '../src/coverage.js'
 
 const cubs = teamByKey('cubs')
 const bulls = teamByKey('bulls')
+
+test('archive coverage calls out unavailable and partial historical data', () => {
+  const now = new Date('2026-08-02T12:00:00Z')
+  assert.equal(coverageNote(bulls, 2026, now), null)
+  assert.match(coverageNote(bulls, 1996, now).detail, /Roster: unavailable/)
+  assert.match(coverageNote(bulls, 1996, now).detail, /current Bulls players only/)
+  assert.match(coverageNote(cubs, 2016, now).detail, /MLB archive/)
+})
 
 test('object-shaped scores with an explicit winner', () => {
   const g = normalizeEvent(

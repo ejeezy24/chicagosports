@@ -44,14 +44,30 @@ function buildQuery(params) {
   return s ? `?${s}` : ''
 }
 
-async function fetchBody(url, { text: wantText = false } = {}) {
+const REQUEST_TIMEOUT_MS = 12_000
+const RETRY_DELAY_MS = 400
+const CACHE_TTL_MS = 15 * 60_000
+const CACHE_MAX_ENTRIES = 64
+
+const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const isRetryable = (error) =>
+  error?.status === 408 || error?.status === 429 || error?.status >= 500 || !error?.status
+
+async function fetchBody(url, { text: wantText = false, timeoutMs = REQUEST_TIMEOUT_MS } = {}) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
   let res
   try {
     res = await fetch(url, {
       headers: { Accept: wantText ? 'text/csv, text/plain, */*' : 'application/json' },
+      signal: controller.signal,
     })
   } catch (cause) {
-    throw new ApiError('Network request failed', { url, cause })
+    const message = controller.signal.aborted ? 'Request timed out' : 'Network request failed'
+    throw new ApiError(message, { url, cause })
+  } finally {
+    clearTimeout(timeout)
   }
   if (!res.ok) {
     throw new ApiError(`Upstream responded ${res.status}`, { status: res.status, url })
@@ -73,9 +89,38 @@ async function fetchBody(url, { text: wantText = false } = {}) {
   }
 }
 
-// Responses are immutable for a given season, and several panels ask for the
-// same team payload, so keep the in-flight promise around for the page session.
+async function fetchWithRetry(url, options) {
+  try {
+    return await fetchBody(url, options)
+  } catch (firstError) {
+    if (!isRetryable(firstError)) throw firstError
+    await pause(RETRY_DELAY_MS)
+    return fetchBody(url, options)
+  }
+}
+
+// Keep recently visited seasons around, but bound the cache: fans can browse
+// decades of schedules in one session and a cache that only grows eventually
+// becomes its own performance problem.
 const cache = new Map()
+
+function cached(key) {
+  const entry = cache.get(key)
+  if (!entry) return null
+  if (entry.expiresAt <= Date.now()) {
+    cache.delete(key)
+    return null
+  }
+  // Refresh insertion order so eviction is least-recently-used.
+  cache.delete(key)
+  cache.set(key, entry)
+  return entry.pending
+}
+
+function remember(key, pending) {
+  cache.set(key, { pending, expiresAt: Date.now() + CACHE_TTL_MS })
+  while (cache.size > CACHE_MAX_ENTRIES) cache.delete(cache.keys().next().value)
+}
 
 async function request(hostKey, path, params, options = {}) {
   const host = HOSTS[hostKey]
@@ -83,11 +128,14 @@ async function request(hostKey, path, params, options = {}) {
   const key = `${hostKey}:${url}`
   // A live score is the one thing here that isn't immutable, so polling asks to
   // go past the cache rather than being served the payload it already has.
-  if (!options.fresh && cache.has(key)) return cache.get(key)
+  if (!options.fresh) {
+    const hit = cached(key)
+    if (hit) return hit
+  }
 
   const pending = (async () => {
     try {
-      return await fetchBody(host.prefix + url, options)
+      return await fetchWithRetry(host.prefix + url, options)
     } catch (proxyError) {
       // Some sources are only reachable through the proxy — nflverse redirects
       // to a host that sends no CORS headers — so there is nothing to retry.
@@ -98,7 +146,7 @@ async function request(hostKey, path, params, options = {}) {
       // most. The direct attempt is authoritative, so its error is the one
       // worth surfacing, but keep the proxy's around for debugging.
       try {
-        return await fetchBody(host.direct + url, options)
+        return await fetchWithRetry(host.direct + url, options)
       } catch (directError) {
         directError.proxyError = proxyError
         throw directError
@@ -106,12 +154,12 @@ async function request(hostKey, path, params, options = {}) {
     }
   })()
 
-  cache.set(key, pending)
+  remember(key, pending)
   // Don't cache failures — but only evict this attempt. Without the identity
   // check a failed refresh would throw away a newer, good payload that other
   // panels are already awaiting. Unreachable before polling existed.
   pending.catch(() => {
-    if (cache.get(key) === pending) cache.delete(key)
+    if (cache.get(key)?.pending === pending) cache.delete(key)
   })
   return pending
 }
