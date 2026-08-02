@@ -19,6 +19,13 @@ decades.
 Team cards at the top show each club's current record and next game, so the
 picker doubles as a "what's on today" strip. Times are shown in Chicago time.
 
+Every view has a URL — `?team=cubs&season=2016&tab=roster` — so a season, club
+and panel can be linked to, bookmarked, and stepped through with Back.
+
+While a game is being played the score refreshes on its own every 30 seconds,
+and only then: nothing polls when nothing is live, or when the tab is in the
+background. Coming back to a backgrounded tab refreshes immediately.
+
 ## Stadiums
 
 Hover (or tab to) any Chicago venue name — in the controls bar, or on a home
@@ -131,17 +138,42 @@ athlete list for any past season, and its other two return the *current* squad
 whatever year you ask for — the season segment is decorative. Asking for the
 2015 Bulls gets you today's Bulls.
 
-So the app splits by sport:
+So each sport gets its history from whoever actually publishes it:
 
-- **Baseball** goes to MLB's API for past seasons, which does have them — the
-  2015 Cubs come back as the 50 players who actually appeared, with each one's
-  age *that season*. Player statistics come from there too.
-- **The other three leagues** say so, and show nothing. Presenting today's squad
-  as a 2015 roster would be worse than an empty panel.
+| League | Past rosters | Past player stats |
+| --- | --- | --- |
+| MLB | `statsapi.mlb.com` | same |
+| NHL | `api-web.nhle.com` | same (`club-stats`) |
+| NFL | nflverse, via `api/nfl-roster` | — |
+| NBA | none found | — |
 
-The player statistics panel carries the same caveat for those leagues: for a
-past season it is the current squad's numbers for that year, earned wherever
-they were playing, and it says as much rather than implying otherwise.
+Ages are computed for the season being viewed; the sources carry only a
+player's age today, which on a 2015 roster is a decade out.
+
+**Basketball has no source.** Eight were checked: `stats.nba.com` and
+`cdn.nba.com` refuse datacenter traffic, `data.nba.net` is retired,
+balldontlie needs an API key, TheSportsDB returns ten entries including the
+team president, and ESPN's season-scoped athlete lists are decorative —
+identical counts for 2015 and 2026. So basketball says it has nothing rather
+than showing today's squad under a past year.
+
+Where a league still falls back to ESPN, the player statistics panel says
+plainly that a past season shows the *current* squad's numbers for that year,
+earned wherever they were playing.
+
+### Why football needs a serverless function
+
+`api/nfl-roster.js` is the only server-side code here. nflverse publishes as
+GitHub release assets, which redirect to a signed URL on a host that sends no
+CORS headers — the browser cannot follow that, and a Vercel rewrite hands the
+302 back rather than following it either. Fetching it in a function solves that,
+and since it is already handling the file it filters to one club and drops the
+21 cross-reference id columns nothing reads: **673 kB of league-wide CSV becomes
+about 28 kB**, cached at the edge for a day.
+
+`vite dev` knows nothing about `api/`, so `vite.config.js` runs the very same
+handler as dev middleware. Two implementations of one endpoint is how this broke
+the first time round.
 
 ## Layout
 
@@ -150,7 +182,10 @@ src/
   api.js         fetch client — same-origin proxy, direct fallback, request cache
   espn.js        normalizers for the payload shapes (they vary by league and era)
   teams.js       the five clubs: ESPN ids, colours, venues, season ranges
-  players.js     season player stats, normalised from ESPN and from MLB
+  players.js     rosters and player stats, normalised from MLB, the NHL and nflverse
+  urlState.js    query-string state: parse, resolve, serialise (pure)
+  useUrlSync.js  writes the URL, listens for back/forward
+  useLivePoll.js polls while a game is live and the tab is visible
   venues.js      the four buildings and their history
   assets/venues/ USGS aerials, one per building, bundled at build time
   seasons.js     season numbering, current-season logic, dropdown options
@@ -161,5 +196,25 @@ src/
 test/
   normalize.test.mjs
 ```
+
+## A note on performance
+
+Two plausible-sounding bottlenecks turned out not to be, which is worth
+recording so nobody optimises them again:
+
+- **The payload sizes are a red herring.** The schedule is 2.5 MB of JSON, but
+  it is gzipped to **87 kB** on the wire, and compression survives the proxy.
+- **The normalizers are not the cost either.** Turning that 2.5 MB into game
+  rows takes **0.9 ms**; the whole-game boxscore takes 0.4 ms.
+
+The real cost was `Intl.DateTimeFormat` construction. `isSameDay` and `monthKey`
+each built a formatter per call and are called once per game row — about 495
+constructions per schedule render at ~0.11 ms each. Reusing module-level
+formatters, as the other functions already did, took those two from **38.5 ms
+and 19.9 ms to 1.2 ms and 0.5 ms**, and a schedule tab switch from **470 ms to a
+210 ms median**. Game rows are memoised too, so a live refresh re-renders the one
+game that changed rather than all 165.
+
+Measure before changing anything here.
 
 Unofficial, and unaffiliated with ESPN or any club.

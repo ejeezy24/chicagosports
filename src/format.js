@@ -22,6 +22,15 @@ const timeFmt = new Intl.DateTimeFormat('en-US', {
   minute: '2-digit',
 })
 
+// Sortable y-m-d, used only to compare two dates for "same day in Chicago".
+const dayKeyFmt = new Intl.DateTimeFormat('en-CA', { timeZone: TZ })
+
+const monthFmt = new Intl.DateTimeFormat('en-US', {
+  timeZone: TZ,
+  month: 'long',
+  year: 'numeric',
+})
+
 const parse = (iso) => {
   if (!iso) return null
   const d = new Date(iso)
@@ -42,20 +51,18 @@ export function formatTime(iso) {
   return timeFmt.format(d)
 }
 
+// These two run once per game row, so a schedule calls them a few hundred
+// times per render. Building an Intl.DateTimeFormat costs about 0.1ms, which
+// is nothing once and 58ms when it's every row — reuse the formatters above
+// rather than constructing them per call.
 export function isSameDay(iso, now = new Date()) {
   const d = parse(iso)
   if (!d) return false
-  const key = (x) =>
-    new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(x)
-  return key(d) === key(now)
+  return dayKeyFmt.format(d) === dayKeyFmt.format(now)
 }
 
 export function monthKey(iso) {
   const d = parse(iso)
   if (!d) return 'Scheduled'
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone: TZ,
-    month: 'long',
-    year: 'numeric',
-  }).format(d)
+  return monthFmt.format(d)
 }

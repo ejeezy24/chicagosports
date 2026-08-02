@@ -1,4 +1,4 @@
-import { Fragment, useId, useMemo, useState } from 'react'
+import { Fragment, memo, useId, useMemo, useState } from 'react'
 import { getSchedule, getScoreboard } from '../api.js'
 import { scheduleEvents, recordFromGames, scoreboardScores, withLiveScores } from '../espn.js'
 import { formatDate, formatTime, isSameDay, monthKey } from '../format.js'
@@ -141,7 +141,13 @@ export function Schedule({ team, season }) {
   )
 }
 
-function GameRow({ game, team }) {
+/**
+ * Memoised because of the live poll: a refresh every thirty seconds would
+ * otherwise rebuild all 165 rows to change one score. `withLiveScores` keeps
+ * object identity for games it didn't touch, so only the game actually being
+ * played re-renders.
+ */
+const GameRow = memo(function GameRow({ game, team }) {
   const [open, setOpen] = useState(false)
   const panelId = useId()
   // Nothing to show for a game that hasn't been played yet.
@@ -238,4 +244,4 @@ function GameRow({ game, team }) {
     ) : null}
     </>
   )
-}
+})
