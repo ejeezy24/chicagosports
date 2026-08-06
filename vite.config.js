@@ -5,17 +5,16 @@ import react from '@vitejs/plugin-react'
 // never has to care about CORS. `vite dev` and `vite preview` proxy them here;
 // vercel.json does the same rewrites for a deployed build. If neither is in
 // play (plain static hosting), src/api.js falls back to calling ESPN directly.
+// No spoofed User-Agent. It used to carry a browser one to avoid the CDN
+// answering server-to-server requests differently; that has since inverted —
+// site.api.espn.com now returns 403 for exactly that header, while the same
+// request with a plain agent succeeds. Production never set it and was
+// unaffected, so dev was the only thing broken.
 const espnProxy = (target, prefix) => ({
   target,
   changeOrigin: true,
   secure: true,
   rewrite: (p) => p.replace(new RegExp(`^${prefix}`), ''),
-  headers: {
-    // ESPN serves these endpoints without auth, but a browser-ish UA avoids
-    // edge cases where the CDN answers server-to-server requests differently.
-    'User-Agent':
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
-  },
 })
 
 // Longest prefixes first — Vite matches with startsWith, so `/espn` would
