@@ -121,16 +121,21 @@ export default function App() {
 
   const accent = accentFor(team)
   const archiveCoverage = coverageNote(team, season)
+  const teamOverview = overviewState.data?.[team.key]
 
   return (
     <div className="app" style={{ '--team': accent }}>
       <header className="masthead">
-        <div>
-          <h1>
-            <span>Chicago</span> Sports
-          </h1>
-          <p>Schedules, scores, rosters, and stats for all five clubs — pick a season.</p>
+        <div className="brand">
+          <div className="brand-mark" aria-hidden="true">CS</div>
+          <div>
+            <div className="eyebrow">All Chicago. Every season.</div>
+            <h1>
+              <span>Chicago</span> Sports
+            </h1>
+          </div>
         </div>
+        <p>Scores, schedules, rosters, and history for the city&apos;s five major clubs.</p>
       </header>
 
       <TeamPicker
@@ -139,37 +144,53 @@ export default function App() {
         overview={overviewState.data}
       />
 
-      <div className="controls">
-        <div className="field">
-          <label htmlFor="season">Season</label>
-          <select
-            id="season"
-            value={season}
-            onChange={(e) => setSeason(Number(e.target.value))}
-          >
-            {seasons.map((s) => (
-              <option key={s} value={s}>
-                {seasonLabel(team, s)}
-              </option>
-            ))}
-          </select>
+      <section className="team-dashboard" aria-label={`${team.name} season controls`}>
+        <div className="team-identity">
+          <div className="team-crest" aria-hidden="true">
+            {teamOverview?.logo ? <img src={teamOverview.logo} alt="" /> : team.abbr}
+          </div>
+          <div>
+            <div className="hero-kicker">{team.leagueLabel} · Chicago</div>
+            <h2>{team.short}</h2>
+            <div className="hero-venue"><Venue name={team.venue} /></div>
+          </div>
         </div>
 
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={includeOlder}
-            onChange={(e) => setIncludeOlder(e.target.checked)}
-          />
-          Show seasons back to {team.oldestSeason}
-        </label>
+        <div className="team-glance">
+          <div>
+            <span>Club snapshot</span>
+            <strong>{teamOverview?.record ?? 'Loading current record…'}</strong>
+          </div>
+          <div>
+            <span>Next up</span>
+            <strong>{teamOverview?.next ?? 'Schedule updating…'}</strong>
+          </div>
+        </div>
 
-        <div className="spacer" />
+        <div className="season-controls">
+          <div className="field">
+            <label htmlFor="season">Season</label>
+            <select
+              id="season"
+              value={season}
+              onChange={(e) => setSeason(Number(e.target.value))}
+            >
+              {seasons.map((s) => (
+                <option key={s} value={s}>
+                  {seasonLabel(team, s)}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div className="field">
-          <span className="tc-league">
-            <Venue name={team.venue} />
-          </span>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={includeOlder}
+              onChange={(e) => setIncludeOlder(e.target.checked)}
+            />
+            Explore back to {team.oldestSeason}
+          </label>
         </div>
 
         {archiveCoverage ? (
@@ -177,7 +198,7 @@ export default function App() {
             <strong>{archiveCoverage.label}</strong> {archiveCoverage.detail}
           </div>
         ) : null}
-      </div>
+      </section>
 
       <div className="tabs" role="tablist">
         {TABS.map((t, index) => (
@@ -187,11 +208,13 @@ export default function App() {
             role="tab"
             aria-selected={tab === t.id}
             aria-controls={`panel-${t.id}`}
+            aria-label={t.label}
             tabIndex={tab === t.id ? 0 : -1}
             onClick={() => selectTab(t.id)}
             onKeyDown={(event) => moveTab(event, index)}
           >
-            {t.label}
+            <span className="tab-label-full" aria-hidden="true">{t.label}</span>
+            <span className="tab-label-short" aria-hidden="true">{t.shortLabel}</span>
           </button>
         ))}
       </div>
@@ -218,7 +241,7 @@ export default function App() {
       </main>
 
       <footer className="foot">
-        Data from ESPN, MLB, the NHL, and nflverse · coverage varies by era · times shown in Chicago time
+        Data from ESPN, NBA, MLB, the NHL, and nflverse · coverage varies by era · times shown in Chicago time
         <br />
         Unofficial and unaffiliated with ESPN or any club.
       </footer>

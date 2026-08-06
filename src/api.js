@@ -16,8 +16,8 @@ const HOSTS = {
   // See players.js for why.
   mlb: { prefix: '/mlbstats', direct: 'https://statsapi.mlb.com' },
   nhl: { prefix: '/nhlweb', direct: 'https://api-web.nhle.com' },
-  // Our own serverless function rather than an upstream — football history has
-  // to be fetched and trimmed server-side. See api/nfl-roster.js.
+  // Our own serverless functions rather than an upstream — nflverse release
+  // redirects and NBA Stats' headers/CORS have to be handled server-side.
   own: { prefix: '', direct: '', proxyOnly: true },
 }
 
@@ -217,6 +217,9 @@ export function getRoster(team, season) {
       // Trimmed to this club before it leaves the server; see api/nfl-roster.js.
       return request('own', '/api/nfl-roster', { season, team: team.abbr })
     }
+    if (team.sport === 'basketball') {
+      return request('own', '/api/nba-history', { season, mode: 'roster' })
+    }
   }
 
   return request('site', `${leaguePath(team)}/teams/${team.espnId}/roster`, { season })
@@ -252,9 +255,9 @@ export function getSummary(team, eventId) {
 /**
  * Season statistics for every player on the roster.
  *
- * Baseball goes to MLB's own API, which returns the whole active roster with
- * stats in one call; ESPN publishes baseball splits only for qualified players.
- * The other three leagues come from ESPN's roster endpoint, which carries them.
+ * Finished seasons use league/archive sources where ESPN ignores its season
+ * parameter: MLB StatsAPI, NBA Stats, the NHL, and nflverse. Current non-MLB
+ * seasons still use ESPN's roster endpoint, which carries player splits.
  */
 export function getPlayerStats(team, season) {
   // Hockey's own API is season-scoped; ESPN's isn't, so use it for past years.
@@ -271,6 +274,17 @@ export function getPlayerStats(team, season) {
       // One request instead of one per player.
       hydrate: `person(stats(type=season,season=${season},gameType=R))`,
     })
+  }
+
+  if (team.sport === 'football' && isHistorical(team, season)) {
+    if (Number(season) < 1999) {
+      return Promise.resolve({ season: Number(season), team: team.abbr, players: [], availableFrom: 1999 })
+    }
+    return request('own', '/api/nfl-player-stats', { season, team: team.abbr })
+  }
+
+  if (team.sport === 'basketball' && isHistorical(team, season)) {
+    return request('own', '/api/nba-history', { season, mode: 'stats' })
   }
 
   return request('web', `/apis/common/v3/sports/${team.sport}/${team.league}/teams/${team.espnId}/roster`, {

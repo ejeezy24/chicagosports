@@ -29,7 +29,6 @@
 
 * {
   box-sizing: border-box;
-  border-radius: 0 !important;
 }
 
 html,
@@ -75,9 +74,6 @@ button {
 
 img {
   max-width: 100%;
-  /* Team logos and headshots get nearest-neighbour scaling so they crunch into
-     the grid instead of blurring against it. */
-  image-rendering: pixelated;
 }
 
 /* ---------- layout ---------- */

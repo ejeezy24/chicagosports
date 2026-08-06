@@ -125,7 +125,7 @@ export const teamByKey = (key) => TEAMS.find((t) => t.key === key) ?? TEAMS[0]
 // of the five read fine on paper as-is, but the logic can't assume that: prefer
 // the club's primary, fall back to its secondary, and only then push the colour
 // away from the backdrop until it clears the contrast floor.
-export const BACKDROP = '#f4f1e8' // keep in step with --bg in index.css
+export const BACKDROP = '#090d18' // keep in step with --bg in night-game.css
 
 // 3:1 is the WCAG AA floor for large / bold text, which is all this colour is
 // used for. The margin above it absorbs the backdrop being tweaked later.

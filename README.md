@@ -50,11 +50,12 @@ fetched — ESPN gives a venue name and little else, so `src/venues.js` carries 
 rest. Former names are listed there too, which is how a 2004 schedule still
 resolves "U.S. Cellular Field" to the right building.
 
-The whole thing is styled as an arcade cabinet: bitmap type (Press Start 2P for
-chrome, Silkscreen for data), square corners, hard offset shadows instead of
-blur, nearest-neighbour logo scaling, and a CRT scanline wash over the page.
-Both fonts are bundled via `@fontsource` rather than pulled from a CDN, so the
-look holds up offline. Animations are stepped, and drop out entirely under
+The current “Chicago Night Game” skin is a dark, responsive sports dashboard:
+a compact five-team switcher, a selected-club snapshot, sticky panel tabs, and
+data-first schedule, roster, and statistics surfaces. Club color stays dynamic,
+while ordinary text uses the system UI stack for legibility. Press Start 2P is
+kept as a small accent on score badges. The design has phone-specific navigation
+and table behavior, and decorative motion drops out under
 `prefers-reduced-motion`.
 
 ## Running it
@@ -144,32 +145,31 @@ So each sport gets its history from whoever actually publishes it:
 | --- | --- | --- |
 | MLB | `statsapi.mlb.com` | same |
 | NHL | `api-web.nhle.com` | same (`club-stats`) |
-| NFL | nflverse, via `api/nfl-roster` | — |
-| NBA | none found | — |
+| NFL | nflverse, via `api/nfl-roster` (1920–present) | nflverse, via `api/nfl-player-stats` (1999–present) |
+| NBA | NBA Stats `commonteamroster` | NBA Stats `playercareerstats`, indexed by that roster |
 
 Ages are computed for the season being viewed; the sources carry only a
 player's age today, which on a 2015 roster is a decade out.
 
-**Basketball has no source.** Eight were checked: `stats.nba.com` and
-`cdn.nba.com` refuse datacenter traffic, `data.nba.net` is retired,
-balldontlie needs an API key, TheSportsDB returns ten entries including the
-team president, and ESPN's season-scoped athlete lists are decorative —
-identical counts for 2015 and 2026. So basketball says it has nothing rather
-than showing today's squad under a past year.
+NBA Stats is called from a serverless function because its feeds require
+NBA.com request headers and do not permit browser CORS. The app requests the
+selected Bulls season directly; it never substitutes the current roster.
 
-Where a league still falls back to ESPN, the player statistics panel says
-plainly that a past season shows the *current* squad's numbers for that year,
-earned wherever they were playing.
+Historical panels include a link to the matching Sports Reference team-season
+page for a human cross-check. Sports Reference is not scraped or used as the
+app's data backend; its published data-use policy explicitly asks sites and
+tools not to be built from scraped Sports Reference data without permission.
 
-### Why football needs a serverless function
+### Why historical feeds need serverless functions
 
-`api/nfl-roster.js` is the only server-side code here. nflverse publishes as
-GitHub release assets, which redirect to a signed URL on a host that sends no
-CORS headers — the browser cannot follow that, and a Vercel rewrite hands the
-302 back rather than following it either. Fetching it in a function solves that,
-and since it is already handling the file it filters to one club and drops the
-21 cross-reference id columns nothing reads: **673 kB of league-wide CSV becomes
-about 28 kB**, cached at the edge for a day.
+`api/nfl-roster.js` and `api/nfl-player-stats.js` handle nflverse GitHub release
+assets, which redirect to a signed URL on a host that sends no CORS headers.
+The browser cannot follow that, and a Vercel rewrite hands the 302 back rather
+than following it either. The functions follow the redirect, filter to Chicago,
+drop unused columns, and cache the result at the edge for a day.
+
+`api/nba-history.js` sends the browser-like headers NBA Stats requires, trims
+its result-set rows into plain objects, and applies the same historical cache.
 
 `vite dev` knows nothing about `api/`, so `vite.config.js` runs the very same
 handler as dev middleware. Two implementations of one endpoint is how this broke
@@ -182,7 +182,8 @@ src/
   api.js         fetch client — same-origin proxy, direct fallback, request cache
   espn.js        normalizers for the payload shapes (they vary by league and era)
   teams.js       the five clubs: ESPN ids, colours, venues, season ranges
-  players.js     rosters and player stats, normalised from MLB, the NHL and nflverse
+  players.js     rosters and player stats, normalised from MLB, NBA, NHL and nflverse
+  references.js  human-facing Sports Reference season links (never scraped)
   urlState.js    query-string state: parse, resolve, serialise (pure)
   useUrlSync.js  writes the URL, listens for back/forward
   useLivePoll.js polls while a game is live and the tab is visible

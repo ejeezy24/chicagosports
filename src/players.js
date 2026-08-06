@@ -1,10 +1,10 @@
-// Rosters and season statistics for a team's players, from two sources.
+// Rosters and season statistics for a team's players, normalized from ESPN,
+// MLB StatsAPI, NBA Stats, the NHL, and nflverse.
 //
 // ESPN does not serve historical rosters at all. Its site endpoint answers 200
 // with an empty athlete list for any past season, and its other two return the
 // *current* squad no matter which year is asked for — the season segment is
-// decorative. So for past seasons baseball comes from MLB's API here, and the
-// other three leagues have to say plainly that the data doesn't exist.
+// decorative. Past seasons therefore use league and archive feeds instead.
 //
 // ESPN's roster endpoint carries season splits for football, basketball and
 // hockey, and describes its own columns — each stat arrives with an
@@ -17,7 +17,7 @@
 // instead. The cost is that StatsAPI returns raw keys with no labels, so the
 // columns below are chosen rather than discovered.
 //
-// Both sources are normalised to the same shape:
+// Every source is normalised to the same shape:
 //   [{ name, columns: [label], rows: [{ id, name, position, jersey, values }] }]
 
 const HITTING = [
@@ -249,6 +249,206 @@ export function nflRosterGroups(payload, teamAbbr, season) {
       label,
       athletes: athletes.sort((a, b) => a.name.localeCompare(b.name)),
     }))
+}
+
+const NFL_STAT_GROUPS = [
+  {
+    name: 'Passing',
+    active: (row) => Number(row.attempts) > 0,
+    columns: [
+      ['games', 'G'],
+      ['completions', 'CMP'],
+      ['attempts', 'ATT'],
+      ['passing_yards', 'YDS'],
+      ['passing_tds', 'TD'],
+      ['passing_interceptions', 'INT'],
+    ],
+  },
+  {
+    name: 'Rushing',
+    active: (row) => Number(row.carries) > 0,
+    columns: [
+      ['games', 'G'],
+      ['carries', 'ATT'],
+      ['rushing_yards', 'YDS'],
+      ['rushing_tds', 'TD'],
+    ],
+  },
+  {
+    name: 'Receiving',
+    active: (row) => Number(row.targets) > 0 || Number(row.receptions) > 0,
+    columns: [
+      ['games', 'G'],
+      ['receptions', 'REC'],
+      ['targets', 'TGT'],
+      ['receiving_yards', 'YDS'],
+      ['receiving_tds', 'TD'],
+    ],
+  },
+  {
+    name: 'Defense',
+    active: (row) =>
+      [
+        'def_tackles_solo',
+        'def_tackle_assists',
+        'def_tackles_for_loss',
+        'def_sacks',
+        'def_interceptions',
+        'def_pass_defended',
+        'def_tds',
+      ].some((key) => Number(row[key]) > 0),
+    columns: [
+      ['games', 'G'],
+      ['def_tackles_solo', 'SOLO'],
+      ['def_tackle_assists', 'AST'],
+      ['def_tackles_for_loss', 'TFL'],
+      ['def_sacks', 'SACK'],
+      ['def_interceptions', 'INT'],
+      ['def_pass_defended', 'PD'],
+      ['def_tds', 'TD'],
+    ],
+  },
+  {
+    name: 'Kicking',
+    active: (row) => Number(row.fg_att) > 0 || Number(row.pat_att) > 0,
+    columns: [
+      ['games', 'G'],
+      ['fg_made', 'FG'],
+      ['fg_att', 'FGA'],
+      ['fg_pct', 'FG%'],
+      ['pat_made', 'XP'],
+      ['pat_att', 'XPA'],
+    ],
+  },
+  {
+    name: 'Punting',
+    active: (row) => Number(row.pt_att) > 0,
+    columns: [
+      ['games', 'G'],
+      ['pt_att', 'PUNTS'],
+      ['pt_yards', 'YDS'],
+      ['pt_long', 'LNG'],
+    ],
+  },
+]
+
+const nflStatValue = (key, raw) => {
+  if (raw === undefined || raw === null || raw === '') return '—'
+  const number = Number(raw)
+  if (key === 'fg_pct' && Number.isFinite(number)) return `${(number * 100).toFixed(1)}%`
+  return String(raw)
+}
+
+/** Season totals from nflverse, grouped into readable football stat tables. */
+export function nflPlayerStats(payload, teamAbbr) {
+  const players =
+    typeof payload === 'string'
+      ? parseCsv(payload, (row) => row.recent_team === teamAbbr)
+      : (payload?.players ?? [])
+  if (players.length === 0) return []
+
+  return NFL_STAT_GROUPS.map((group) => ({
+    name: group.name,
+    columns: group.columns.map(([, label]) => label),
+    rows: players
+      .filter(group.active)
+      .map((player) => ({
+        id: player.player_id || `${group.name}-${player.player_display_name}`,
+        name: player.player_display_name || player.player_name || 'Unknown',
+        position: player.position || null,
+        jersey: null,
+        values: group.columns.map(([key]) => nflStatValue(key, player[key])),
+      })),
+  })).filter((group) => group.rows.length > 0)
+}
+
+const NBA_POSITION_GROUP = {
+  G: 'Guards',
+  F: 'Forwards',
+  C: 'Centers',
+}
+
+const nbaHeight = (height) => {
+  const match = String(height ?? '').match(/^(\d+)-(\d+)$/)
+  return match ? `${match[1]}' ${match[2]}"` : (height || null)
+}
+
+/** NBA Stats CommonTeamRoster rows, grouped in the same shape as every roster. */
+export function nbaRosterGroups(payload) {
+  const roster = (payload?.roster ?? []).filter(Boolean)
+  if (roster.length === 0) return []
+  const buckets = new Map()
+
+  for (const player of roster) {
+    const primary = String(player.POSITION ?? '').charAt(0)
+    const label = NBA_POSITION_GROUP[primary] ?? 'Other'
+    if (!buckets.has(label)) buckets.set(label, [])
+    buckets.get(label).push({
+      id: player.PLAYER_ID ?? player.PLAYER,
+      name: player.PLAYER ?? 'Unknown',
+      jersey: player.NUM ?? null,
+      position: player.POSITION ?? null,
+      positionName: label.replace(/s$/, ''),
+      height: nbaHeight(player.HEIGHT),
+      weight: player.WEIGHT ? `${player.WEIGHT} lbs` : null,
+      age: Number.isFinite(Number(player.AGE)) ? Number(player.AGE) : null,
+      college: player.SCHOOL ?? null,
+      birthplace: null,
+      headshot: player.PLAYER_ID
+        ? `https://cdn.nba.com/headshots/nba/latest/260x190/${player.PLAYER_ID}.png`
+        : null,
+      bats: null,
+      throws: null,
+      status: null,
+    })
+  }
+
+  const order = ['Guards', 'Forwards', 'Centers', 'Other']
+  return [...buckets.entries()]
+    .sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]))
+    .map(([label, athletes]) => ({ label, athletes }))
+}
+
+const NBA_STATS = [
+  ['GP', 'GP'],
+  ['MIN', 'MIN'],
+  ['PTS', 'PTS'],
+  ['REB', 'REB'],
+  ['AST', 'AST'],
+  ['STL', 'STL'],
+  ['BLK', 'BLK'],
+  ['TOV', 'TOV'],
+  ['FG_PCT', 'FG%'],
+  ['FG3_PCT', '3P%'],
+  ['FT_PCT', 'FT%'],
+]
+
+const nbaStatValue = (key, raw) => {
+  if (raw === undefined || raw === null || raw === '') return '—'
+  if (key.endsWith('_PCT')) {
+    const number = Number(raw)
+    return Number.isFinite(number) ? number.toFixed(3).replace(/^0/, '') : String(raw)
+  }
+  return String(raw)
+}
+
+/** NBA Stats TeamPlayerDashboard totals for one Bulls season. */
+export function nbaPlayerStats(payload) {
+  const players = (payload?.players ?? []).filter(Boolean)
+  if (players.length === 0) return []
+  return [
+    {
+      name: 'Regular-season totals',
+      columns: NBA_STATS.map(([, label]) => label),
+      rows: players.map((player) => ({
+        id: player.PLAYER_ID ?? player.PLAYER_NAME,
+        name: player.PLAYER_NAME ?? 'Unknown',
+        position: null,
+        jersey: null,
+        values: NBA_STATS.map(([key]) => nbaStatValue(key, player[key])),
+      })),
+    },
+  ]
 }
 
 /**

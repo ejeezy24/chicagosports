@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { getPlayerStats, isHistorical } from '../api.js'
-import { espnPlayerStats, mlbPlayerStats, nhlPlayerStats } from '../players.js'
+import {
+  espnPlayerStats,
+  mlbPlayerStats,
+  nbaPlayerStats,
+  nflPlayerStats,
+  nhlPlayerStats,
+} from '../players.js'
+import { sportsReference } from '../references.js'
 import { seasonLabel } from '../seasons.js'
 import { useAsync } from '../useAsync.js'
 import { Async, Panel } from './ui.jsx'
@@ -19,24 +26,39 @@ export function Players({ team, season }) {
   const groupsFrom = (data) => {
     if (team.sport === 'baseball') return mlbPlayerStats(data, team.mlbId)
     if (team.sport === 'hockey' && past) return nhlPlayerStats(data)
+    if (team.sport === 'football' && past) return nflPlayerStats(data, team.abbr)
+    if (team.sport === 'basketball' && past) return nbaPlayerStats(data)
     return espnPlayerStats(data)
   }
 
-  // ESPN's roster endpoint ignores the season it's given and always returns the
-  // current squad, so for a past season these are the players who are here now,
-  // showing what they did that year — wherever they were. Saying so is the only
-  // honest way to show it. Baseball and hockey come from their own leagues for
-  // past seasons and are genuinely season-scoped, so they need no such warning.
-  const currentSquadOnly = past && team.sport !== 'baseball' && team.sport !== 'hockey'
+  const archiveSource = past
+    ? {
+        baseball: 'MLB StatsAPI',
+        hockey: 'the NHL',
+        football: Number(season) >= 1999 ? 'nflverse' : null,
+        basketball: 'NBA Stats',
+      }[team.sport]
+    : null
+  const reference = past ? sportsReference(team, season) : null
+  const beforeNflStats = past && team.sport === 'football' && Number(season) < 1999
 
   return (
     <Panel
       title={`${seasonLabel(team, season)} player statistics`}
       aside="Click a column to sort"
       note={
-        currentSquadOnly
-          ? `ESPN doesn't publish past ${team.leagueLabel} rosters, so this is the current squad's ${seasonLabel(team, season)} numbers — earned wherever they played that year. Players who have since left the club aren't here.`
-          : null
+        past ? (
+          <>
+            {archiveSource
+              ? `Season-specific totals from ${archiveSource}. `
+              : 'nflverse season player totals begin in 1999. '}
+            {reference ? (
+              <a href={reference.url} target="_blank" rel="noreferrer">
+                Cross-check this season on {reference.label}
+              </a>
+            ) : null}
+          </>
+        ) : null
       }
     >
       <Async
@@ -44,7 +66,11 @@ export function Players({ team, season }) {
         what="player statistics"
         rows={5}
         isEmpty={(d) => groupsFrom(d).length === 0}
-        empty={`No player statistics published for ${seasonLabel(team, season)}.`}
+        empty={
+          beforeNflStats
+            ? `Season-specific Bears player totals are unavailable before 1999. The roster, schedule, scores, team stats, and standings are still historical.`
+            : `No player statistics published for ${seasonLabel(team, season)}.`
+        }
       >
         {(data) =>
           groupsFrom(data).map((group) => <PlayerGroup key={group.name} group={group} />)

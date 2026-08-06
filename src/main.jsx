@@ -7,6 +7,7 @@ import '@fontsource/silkscreen/400.css'
 import '@fontsource/silkscreen/700.css'
 import App from './App.jsx'
 import './index.css'
+import './night-game.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { getRoster, isHistorical } from '../api.js'
 import { rosterCoach, rosterGroups, rosterSeason } from '../espn.js'
-import { mlbRosterGroups, nflRosterGroups, nhlRosterGroups } from '../players.js'
+import { mlbRosterGroups, nbaRosterGroups, nflRosterGroups, nhlRosterGroups } from '../players.js'
+import { sportsReference } from '../references.js'
 import { seasonLabel } from '../seasons.js'
 import { useAsync } from '../useAsync.js'
 import { Async, Panel } from './ui.jsx'
@@ -14,14 +15,22 @@ const LEAGUE_SOURCE = {
     label: 'nflverse',
     groups: (data, season, team) => nflRosterGroups(data, team.abbr, season),
   },
+  basketball: {
+    label: 'NBA Stats',
+    groups: nbaRosterGroups,
+    coach: (data) =>
+      data?.coaches?.find((coach) => !coach.IS_ASSISTANT)?.COACH_NAME ??
+      data?.coaches?.find(Boolean)?.COACH_NAME ??
+      null,
+  },
 }
 
 export function Roster({ team, season }) {
   const [query, setQuery] = useState('')
   const state = useAsync(() => getRoster(team, season), [team.key, season])
 
-  // Past seasons come from the league's own API in a different payload shape;
-  // see getRoster. Football and basketball have no such source.
+  // Past seasons come from league/archive APIs in different payload shapes;
+  // see getRoster. The adapters make all four sports look the same here.
   const source = isHistorical(team, season) ? LEAGUE_SOURCE[team.sport] : null
 
   return (
@@ -43,7 +52,9 @@ export function Roster({ team, season }) {
         what="the roster"
         isEmpty={(d) => groupsFor(d, team, season, source).length === 0}
         empty={
-          isHistorical(team, season)
+          source
+            ? `No ${seasonLabel(team, season)} roster was returned by ${source.label}.`
+            : isHistorical(team, season)
             ? `ESPN doesn't publish ${team.leagueLabel} rosters for past seasons, so there is no ${seasonLabel(team, season)} squad to show. Its endpoints either come back empty or return today's roster, which would be worse than nothing.`
             : `No roster published for ${seasonLabel(team, season)}.`
         }
@@ -72,7 +83,8 @@ function RosterBody({ data, team, season, query, source }) {
   )
   // MLB's payload is season-scoped by construction, so only ESPN's can disagree.
   const returned = source ? null : rosterSeason(data)
-  const coach = source ? null : rosterCoach(data)
+  const coach = source ? source.coach?.(data) : rosterCoach(data)
+  const reference = source ? sportsReference(team, season) : null
 
   const needle = query.trim().toLowerCase()
   const filtered = groups
@@ -106,7 +118,12 @@ function RosterBody({ data, team, season, query, source }) {
           {mismatch
             ? `ESPN returned its ${returned.label ?? returned.year} roster — historical rosters aren't published for every league, so this may not be the ${seasonLabel(team, season)} squad. `
             : ''}
-          {coach ? `Head coach/manager: ${coach}.` : ''}
+          {coach ? `Head coach/manager: ${coach}. ` : ''}
+          {reference ? (
+            <a href={reference.url} target="_blank" rel="noreferrer">
+              Cross-check this season on {reference.label}
+            </a>
+          ) : null}
         </div>
       )}
 

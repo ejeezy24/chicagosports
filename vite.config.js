@@ -36,17 +36,25 @@ const proxy = {
  * how the NFL roster broke the first time.
  */
 function vercelFunctions() {
+  const functions = {
+    '/api/nfl-roster': '/api/nfl-roster.js',
+    '/api/nfl-player-stats': '/api/nfl-player-stats.js',
+    '/api/nba-history': '/api/nba-history.js',
+  }
+
   return {
     name: 'vercel-functions-in-dev',
     configureServer(server) {
-      server.middlewares.use('/api/nfl-roster', async (req, res, next) => {
-        try {
-          const { default: handler } = await server.ssrLoadModule('/api/nfl-roster.js')
-          await handler(req, res)
-        } catch (err) {
-          next(err)
-        }
-      })
+      for (const [route, modulePath] of Object.entries(functions)) {
+        server.middlewares.use(route, async (req, res, next) => {
+          try {
+            const { default: handler } = await server.ssrLoadModule(modulePath)
+            await handler(req, res)
+          } catch (err) {
+            next(err)
+          }
+        })
+      }
     },
   }
 }

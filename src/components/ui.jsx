@@ -61,8 +61,8 @@ export function ErrorState({ error, what, onRetry }) {
       Couldn&apos;t load {what}.
       <small>{error?.message ?? String(error)}</small>
       <small>
-        These come straight from ESPN&apos;s public endpoints — older seasons and
-        off-season windows are sometimes simply not published.
+        These records come from public league and archive feeds. Older seasons,
+        off-season windows, and upstream services are sometimes unavailable.
       </small>
       {onRetry ? (
         <button className="retry" onClick={onRetry}>

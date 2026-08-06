@@ -28,11 +28,16 @@ import {
   espnPlayerStats,
   mlbPlayerStats,
   mlbRosterGroups,
+  nbaPlayerStats,
+  nbaRosterGroups,
+  nflPlayerStats,
   nflRosterGroups,
   nhlPlayerStats,
   nhlRosterGroups,
   parseCsv,
 } from '../src/players.js'
+import { nbaSeasonKey, resultRows } from '../api/nba-history.js'
+import { sportsReference } from '../src/references.js'
 import { DEFAULT_TEAM, resolveState, toSearch } from '../src/urlState.js'
 import { ownDivisionFirst } from '../src/espn.js'
 import { coverageNote } from '../src/coverage.js'
@@ -43,8 +48,10 @@ const bulls = teamByKey('bulls')
 test('archive coverage calls out unavailable and partial historical data', () => {
   const now = new Date('2026-08-02T12:00:00Z')
   assert.equal(coverageNote(bulls, 2026, now), null)
-  assert.match(coverageNote(bulls, 1996, now).detail, /Roster: unavailable/)
-  assert.match(coverageNote(bulls, 1996, now).detail, /current Bulls players only/)
+  assert.match(coverageNote(bulls, 1996, now).detail, /Roster: NBA Stats archive/)
+  assert.match(coverageNote(bulls, 1996, now).detail, /Player stats: NBA Stats archive/)
+  assert.match(coverageNote(teamByKey('bears'), 1999, now).detail, /Player stats: nflverse archive/)
+  assert.match(coverageNote(teamByKey('bears'), 1985, now).detail, /unavailable before 1999/)
   assert.match(coverageNote(cubs, 2016, now).detail, /MLB archive/)
 })
 
@@ -950,6 +957,138 @@ test('an nflverse roster groups by unit and picks one club', () => {
   assert.equal(jeffery.college, 'South Carolina')
 
   assert.equal(nflRosterGroups(csv, 'NYJ', 2015).length, 0, 'a club with no rows gets nothing')
+})
+
+test('nflverse season totals become football-specific stat tables', () => {
+  const groups = nflPlayerStats({
+    players: [
+      {
+        player_id: 'cutler',
+        player_display_name: 'Jay Cutler',
+        position: 'QB',
+        games: '15',
+        completions: '311',
+        attempts: '483',
+        passing_yards: '3659',
+        passing_tds: '21',
+        passing_interceptions: '11',
+        carries: '38',
+        rushing_yards: '201',
+        rushing_tds: '1',
+      },
+      {
+        player_id: 'jeffery',
+        player_display_name: 'Alshon Jeffery',
+        position: 'WR',
+        games: '9',
+        receptions: '54',
+        targets: '94',
+        receiving_yards: '807',
+        receiving_tds: '4',
+      },
+      {
+        player_id: 'mcphee',
+        player_display_name: 'Pernell McPhee',
+        position: 'OLB',
+        games: '14',
+        def_tackles_solo: '36',
+        def_tackle_assists: '11',
+        def_tackles_for_loss: '8',
+        def_sacks: '6',
+        def_interceptions: '1',
+        def_pass_defended: '3',
+        def_tds: '0',
+      },
+      {
+        player_id: 'gould',
+        player_display_name: 'Robbie Gould',
+        position: 'K',
+        games: '16',
+        fg_made: '33',
+        fg_att: '39',
+        fg_pct: '0.846153846',
+        pat_made: '28',
+        pat_att: '29',
+      },
+    ],
+  })
+
+  assert.deepEqual(groups.map((group) => group.name), [
+    'Passing',
+    'Rushing',
+    'Receiving',
+    'Defense',
+    'Kicking',
+  ])
+  assert.equal(groups[0].rows[0].name, 'Jay Cutler')
+  assert.equal(groups[2].rows[0].values[groups[2].columns.indexOf('YDS')], '807')
+  assert.equal(groups[3].rows[0].values[groups[3].columns.indexOf('SACK')], '6')
+  assert.equal(groups[4].rows[0].values[groups[4].columns.indexOf('FG%')], '84.6%')
+  assert.deepEqual(nflPlayerStats({ players: [] }, 'CHI'), [])
+})
+
+test('NBA result sets, roster rows and season totals are normalized', () => {
+  assert.equal(nbaSeasonKey(1996), '1995-96')
+  assert.equal(nbaSeasonKey('2000'), '1999-00')
+  assert.equal(nbaSeasonKey('nope'), null)
+
+  const payload = {
+    resultSets: [
+      {
+        name: 'CommonTeamRoster',
+        headers: ['PLAYER_ID', 'PLAYER', 'NUM', 'POSITION', 'HEIGHT', 'WEIGHT', 'AGE', 'SCHOOL'],
+        rowSet: [
+          [893, 'Michael Jordan', '23', 'G', '6-6', '216', 33, 'North Carolina'],
+          [23, 'Scottie Pippen', '33', 'F', '6-8', '228', 30, 'Central Arkansas'],
+          [29, 'Luc Longley', '13', 'C', '7-2', '265', 27, 'New Mexico'],
+        ],
+      },
+    ],
+  }
+  const roster = resultRows(payload, 'CommonTeamRoster')
+  assert.equal(roster[0].PLAYER, 'Michael Jordan')
+
+  const rosterGroups = nbaRosterGroups({ roster })
+  assert.deepEqual(rosterGroups.map((group) => group.label), ['Guards', 'Forwards', 'Centers'])
+  assert.equal(rosterGroups[0].athletes[0].height, `6' 6"`)
+  assert.equal(rosterGroups[0].athletes[0].age, 33)
+  assert.match(rosterGroups[0].athletes[0].headshot, /893/)
+
+  const stats = nbaPlayerStats({
+    players: [
+      {
+        PLAYER_ID: 893,
+        PLAYER_NAME: 'Michael Jordan',
+        GP: 82,
+        MIN: 3090,
+        PTS: 2491,
+        REB: 543,
+        AST: 352,
+        STL: 180,
+        BLK: 42,
+        TOV: 197,
+        FG_PCT: 0.495,
+        FG3_PCT: 0.427,
+        FT_PCT: 0.834,
+      },
+    ],
+  })[0]
+  assert.equal(stats.rows[0].name, 'Michael Jordan')
+  assert.equal(stats.rows[0].values[stats.columns.indexOf('PTS')], '2491')
+  assert.equal(stats.rows[0].values[stats.columns.indexOf('3P%')], '.427')
+  assert.deepEqual(nbaRosterGroups(null), [])
+  assert.deepEqual(nbaPlayerStats(null), [])
+})
+
+test('Sports Reference is linked for cross-checking, not used as a data feed', () => {
+  assert.equal(
+    sportsReference(teamByKey('bulls'), 1996).url,
+    'https://www.basketball-reference.com/teams/CHI/1996.html',
+  )
+  assert.equal(
+    sportsReference(teamByKey('bears'), 1985).url,
+    'https://www.pro-football-reference.com/teams/chi/1985.htm',
+  )
 })
 
 test('player stats degrade to nothing rather than throwing', () => {
