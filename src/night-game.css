@@ -35,7 +35,7 @@ html {
 }
 
 body {
-  min-width: 320px;
+  min-width: 280px;
   background-color: var(--bg);
   background-image:
     radial-gradient(circle, rgba(23, 26, 45, 0.13) 0 0.7px, transparent 0.8px),
@@ -821,6 +821,16 @@ tbody tr.me {
 
   .panel-head {
     flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 360px) {
+  .teams {
+    grid-template-columns: 1fr;
+  }
+
+  .team-card {
+    min-height: 92px;
   }
 }
 
