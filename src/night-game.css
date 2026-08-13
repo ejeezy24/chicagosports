@@ -355,13 +355,13 @@ a {
 
 .team-glance strong {
   display: block;
-  overflow: hidden;
+  overflow: visible;
   color: var(--scoreboard-ink);
   font-family: Silkscreen, monospace;
-  font-size: 16px;
+  font-size: clamp(12px, 1.35vw, 15px);
   font-weight: 700;
   line-height: 1.35;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
 .season-controls {
@@ -801,7 +801,8 @@ tbody tr.me {
   }
 
   .masthead h1 {
-    font-size: 16px;
+    font-size: 14px;
+    line-height: 1.5;
   }
 
   .team-identity {
@@ -814,7 +815,8 @@ tbody tr.me {
   }
 
   .team-glance strong {
-    font-size: 13px;
+    font-size: 12px;
+    line-height: 1.45;
   }
 
   .panel-head {
