@@ -25,7 +25,7 @@ const LEAGUE_SOURCE = {
   },
 }
 
-export function Roster({ team, season }) {
+export function Roster({ team, season, onOpenPlayer }) {
   const [query, setQuery] = useState('')
   const state = useAsync(() => getRoster(team, season), [team.key, season])
 
@@ -66,6 +66,7 @@ export function Roster({ team, season }) {
             season={season}
             query={query}
             source={source}
+            onOpenPlayer={onOpenPlayer}
           />
         )}
       </Async>
@@ -76,7 +77,7 @@ export function Roster({ team, season }) {
 const groupsFor = (data, team, season, source) =>
   source ? source.groups(data, season, team) : rosterGroups(data)
 
-function RosterBody({ data, team, season, query, source }) {
+function RosterBody({ data, team, season, query, source, onOpenPlayer }) {
   const groups = useMemo(
     () => groupsFor(data, team, season, source),
     [data, team, season, source],
@@ -127,6 +128,13 @@ function RosterBody({ data, team, season, query, source }) {
         </div>
       )}
 
+      <div className="roster-ledger" aria-label="Roster archive verification">
+        <div><span>Season file</span><strong>{seasonLabel(team, season)}</strong></div>
+        <div><span>Verified players</span><strong>{groups.reduce((count, group) => count + group.athletes.length, 0)}</strong></div>
+        <div><span>Position groups</span><strong>{groups.length}</strong></div>
+        <div><span>Archive source</span><strong>{source?.label ?? 'ESPN current roster'}</strong></div>
+      </div>
+
       {total === 0 ? (
         <div className="state">No players match “{query}”.</div>
       ) : (
@@ -137,7 +145,7 @@ function RosterBody({ data, team, season, query, source }) {
             </div>
             <div className="players">
               {group.athletes.map((a) => (
-                <PlayerCard key={a.id ?? `${a.name}-${a.jersey}`} player={a} />
+                <PlayerCard key={a.id ?? `${a.name}-${a.jersey}`} player={a} onOpen={onOpenPlayer} />
               ))}
             </div>
           </div>
@@ -155,7 +163,7 @@ const initials = (name) =>
     .join('')
     .toUpperCase() || '—'
 
-function PlayerCard({ player: p }) {
+function PlayerCard({ player: p, onOpen }) {
   const line = [
     p.position,
     p.height,
@@ -170,7 +178,7 @@ function PlayerCard({ player: p }) {
     .join(' · ')
 
   return (
-    <div className="player">
+    <button className="player player-link" onClick={() => onOpen?.(p.name)} aria-label={`Open ${p.name} season profile`}>
       {p.headshot ? (
         <img className="shot" src={p.headshot} alt="" loading="lazy" />
       ) : (
@@ -185,6 +193,7 @@ function PlayerCard({ player: p }) {
         </b>
         <span title={line}>{line || '—'}</span>
       </div>
-    </div>
+      <span className="player-open" aria-hidden="true">FILE →</span>
+    </button>
   )
 }

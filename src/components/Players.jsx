@@ -1,16 +1,22 @@
 import { useState } from 'react'
-import { getPlayerStats, isHistorical } from '../api.js'
+import { getPlayerStats, getRoster, isHistorical } from '../api.js'
+import { rosterGroups } from '../espn.js'
 import {
   espnPlayerStats,
+  mlbRosterGroups,
   mlbPlayerStats,
+  nbaRosterGroups,
   nbaPlayerStats,
+  nflRosterGroups,
   nflPlayerStats,
+  nhlRosterGroups,
   nhlPlayerStats,
 } from '../players.js'
 import { sportsReference } from '../references.js'
 import { seasonLabel } from '../seasons.js'
 import { useAsync } from '../useAsync.js'
 import { Async, Panel } from './ui.jsx'
+import { findPlayerBio, PlayerProfile, samePlayer } from './PlayerProfile.jsx'
 
 /**
  * Season statistics for every player on the roster, sortable by any column.
@@ -18,8 +24,16 @@ import { Async, Panel } from './ui.jsx'
  * Baseball and everything else come from different APIs — see players.js — but
  * both arrive here in the same shape.
  */
-export function Players({ team, season }) {
-  const state = useAsync(() => getPlayerStats(team, season), [team.key, season])
+export function Players({ team, season, focusName }) {
+  const [selected, setSelected] = useState(() => focusName ? { name: focusName } : null)
+  const state = useAsync(async () => {
+    const [stats, roster] = await Promise.allSettled([
+      getPlayerStats(team, season),
+      getRoster(team, season),
+    ])
+    if (stats.status === 'rejected') throw stats.reason
+    return { stats: stats.value, roster: roster.status === 'fulfilled' ? roster.value : null }
+  }, [team.key, season])
 
   const past = isHistorical(team, season)
 
@@ -65,22 +79,57 @@ export function Players({ team, season }) {
         state={state}
         what="player statistics"
         rows={5}
-        isEmpty={(d) => groupsFrom(d).length === 0}
+        isEmpty={(d) => groupsFrom(d.stats).length === 0}
         empty={
           beforeNflStats
             ? `Season-specific Bears player totals are unavailable before 1999. The roster, schedule, scores, team stats, and standings are still historical.`
             : `No player statistics published for ${seasonLabel(team, season)}.`
         }
       >
-        {(data) =>
-          groupsFrom(data).map((group) => <PlayerGroup key={group.name} group={group} />)
-        }
+        {(data) => {
+          const groups = groupsFrom(data.stats)
+          const roster = rosterGroupsFrom(data.roster, team, season, past)
+          const resolved = selected
+            ? groups.flatMap((group) => group.rows).find((player) => samePlayer(player, selected)) ?? selected
+            : null
+          return (
+            <>
+              <div className="stats-directory">
+                <span>{new Set(groups.flatMap((group) => group.rows.map((player) => player.name))).size} players in this season file</span>
+                <span>Choose any name for a full player card</span>
+              </div>
+              {resolved ? (
+                <PlayerProfile
+                  team={team}
+                  season={season}
+                  player={resolved}
+                  bio={findPlayerBio(roster, resolved)}
+                  groups={groups}
+                  onClose={() => setSelected(null)}
+                />
+              ) : null}
+              {groups.map((group) => (
+                <PlayerGroup key={group.name} group={group} selected={resolved} onSelect={setSelected} />
+              ))}
+            </>
+          )
+        }}
       </Async>
     </Panel>
   )
 }
 
-function PlayerGroup({ group }) {
+function rosterGroupsFrom(data, team, season, past) {
+  if (!data) return []
+  if (!past) return rosterGroups(data)
+  if (team.sport === 'baseball') return mlbRosterGroups(data, season)
+  if (team.sport === 'hockey') return nhlRosterGroups(data, season)
+  if (team.sport === 'football') return nflRosterGroups(data, team.abbr, season)
+  if (team.sport === 'basketball') return nbaRosterGroups(data)
+  return []
+}
+
+function PlayerGroup({ group, selected, onSelect }) {
   // null = roster order, which is how the source sent it.
   const [sort, setSort] = useState(null)
 
@@ -113,10 +162,10 @@ function PlayerGroup({ group }) {
           </thead>
           <tbody>
             {rows.map((p) => (
-              <tr key={p.id}>
+              <tr key={p.id} className={selected && samePlayer(p, selected) ? 'profile-selected' : undefined}>
                 <th scope="row">
                   {p.jersey ? <span className="pnum">{p.jersey}</span> : null}
-                  <span className="pname">{p.name}</span>
+                  <button className="player-name-button" onClick={() => onSelect(p)}>{p.name}</button>
                   {p.position ? <span className="ppos">{p.position}</span> : null}
                 </th>
                 {p.values.map((v, i) => (

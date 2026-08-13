@@ -49,6 +49,7 @@ export default function App() {
   const [season, setSeason] = useState(initial.season)
   const [tab, setTab] = useState(initial.tab)
   const [includeOlder, setIncludeOlder] = useState(initial.includeOlder)
+  const [playerFocus, setPlayerFocus] = useState(null)
 
   const selectTab = useCallback((nextTab) => {
     setTab(nextTab)
@@ -87,6 +88,7 @@ export default function App() {
   useEffect(() => {
     store.set('cs.team', teamKey)
     setSeason((s) => clampSeason(team, s))
+    setPlayerFocus(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teamKey])
 
@@ -100,6 +102,15 @@ export default function App() {
     if (!seasons.includes(season)) setSeason(seasons[0])
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seasons])
+
+  useEffect(() => {
+    setPlayerFocus(null)
+  }, [season])
+
+  const openPlayer = useCallback((name) => {
+    setPlayerFocus(name)
+    setTab('players')
+  }, [])
 
   const overviewState = useAsync(
     ({ fresh }) =>
@@ -230,10 +241,10 @@ export default function App() {
           <Schedule key={`sch-${team.key}-${season}`} team={team} season={season} />
         )}
         {tab === 'roster' && (
-          <Roster key={`ros-${team.key}-${season}`} team={team} season={season} />
+          <Roster key={`ros-${team.key}-${season}`} team={team} season={season} onOpenPlayer={openPlayer} />
         )}
         {tab === 'players' && (
-          <Players key={`plr-${team.key}-${season}`} team={team} season={season} />
+          <Players key={`plr-${team.key}-${season}-${playerFocus ?? ''}`} team={team} season={season} focusName={playerFocus} />
         )}
         {tab === 'stats' && (
           <TeamStats key={`sta-${team.key}-${season}`} team={team} season={season} />
