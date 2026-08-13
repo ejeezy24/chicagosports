@@ -16,7 +16,7 @@ const LEAGUE_SOURCE = {
     groups: (data, season, team) => nflRosterGroups(data, team.abbr, season),
   },
   basketball: {
-    label: 'NBA Stats',
+    label: 'NBA Stats / verified season archive',
     groups: nbaRosterGroups,
     coach: (data) =>
       data?.coaches?.find((coach) => !coach.IS_ASSISTANT)?.COACH_NAME ??

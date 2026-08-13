@@ -36,6 +36,7 @@ import {
   nhlRosterGroups,
   parseCsv,
 } from '../src/players.js'
+import { archivedNbaSeason } from '../api/nba-history-archive.js'
 import { nbaSeasonKey, resultRows } from '../api/nba-history.js'
 import { sportsReference } from '../src/references.js'
 import { DEFAULT_TEAM, resolveState, toSearch } from '../src/urlState.js'
@@ -1078,6 +1079,22 @@ test('NBA result sets, roster rows and season totals are normalized', () => {
   assert.equal(stats.rows[0].values[stats.columns.indexOf('3P%')], '.427')
   assert.deepEqual(nbaRosterGroups(null), [])
   assert.deepEqual(nbaPlayerStats(null), [])
+})
+
+test('the 1995-96 Bulls archive survives NBA Stats outages', () => {
+  const roster = archivedNbaSeason(1996, 'roster')
+  const stats = archivedNbaSeason(1996, 'stats')
+
+  assert.equal(roster.season, '1995-96')
+  assert.equal(roster.roster.length, 15)
+  assert.equal(roster.coaches[0].COACH_NAME, 'Phil Jackson')
+  assert.equal(stats.perMode, 'PerGame')
+  assert.equal(stats.players.length, 15)
+  const jordan = stats.players.find((player) => player.PLAYER_NAME === 'Michael Jordan')
+  assert.deepEqual(
+    { GP: jordan.GP, PTS: jordan.PTS, FG_PCT: jordan.FG_PCT },
+    { GP: 82, PTS: 30.4, FG_PCT: .495 },
+  )
 })
 
 test('Sports Reference is linked for cross-checking, not used as a data feed', () => {

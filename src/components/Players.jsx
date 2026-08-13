@@ -36,7 +36,7 @@ export function Players({ team, season }) {
         baseball: 'MLB StatsAPI',
         hockey: 'the NHL',
         football: Number(season) >= 1999 ? 'nflverse' : null,
-        basketball: 'NBA Stats',
+        basketball: 'NBA Stats / verified season archive',
       }[team.sport]
     : null
   const reference = past ? sportsReference(team, season) : null

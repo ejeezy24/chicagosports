@@ -438,7 +438,7 @@ export function nbaPlayerStats(payload) {
   if (players.length === 0) return []
   return [
     {
-      name: 'Regular-season totals',
+      name: payload?.perMode === 'PerGame' ? 'Regular-season per game' : 'Regular-season totals',
       columns: NBA_STATS.map(([, label]) => label),
       rows: players.map((player) => ({
         id: player.PLAYER_ID ?? player.PLAYER_NAME,

@@ -2,6 +2,8 @@
 // used by NBA.com. They require browser-like headers and do not allow browser
 // CORS, so the season-scoped responses are fetched and trimmed server-side.
 
+import { archivedNbaSeason } from './nba-history-archive.js'
+
 const NBA_ORIGIN = 'https://stats.nba.com/stats'
 const BULLS_ID = '1610612741'
 const REQUEST_TIMEOUT_MS = 18_000
@@ -76,6 +78,17 @@ export default async function handler(req, res) {
     res.statusCode = 400
     res.setHeader('Content-Type', 'application/json')
     return res.end(JSON.stringify({ error: 'season (4 digits) and mode (roster or stats) required' }))
+  }
+
+  // Landmark seasons live in the repository so a cold serverless function is
+  // never forced to wait on stats.nba.com. Other seasons still use the league
+  // feed and can be added to the archive without changing this endpoint.
+  const archived = archivedNbaSeason(endingYear, mode)
+  if (archived) {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'application/json')
+    res.setHeader('Cache-Control', 'public, s-maxage=31536000, immutable')
+    return res.end(JSON.stringify(archived))
   }
 
   try {
