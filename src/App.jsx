@@ -15,6 +15,7 @@ import { TeamStats } from './components/TeamStats.jsx'
 import { Standings } from './components/Standings.jsx'
 import { TeamPicker, summarizeTeam } from './components/TeamPicker.jsx'
 import { Venue } from './components/Venue.jsx'
+import { Archive } from './components/Archive.jsx'
 
 const store = {
   get(key, fallback) {
@@ -222,6 +223,9 @@ export default function App() {
       <main>
         <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} tabIndex={-1}>
         {/* Keyed so switching team or season remounts panels with clean state. */}
+        {tab === 'archive' && (
+          <Archive key={`arc-${team.key}-${season}`} team={team} season={season} seasons={seasons} />
+        )}
         {tab === 'schedule' && (
           <Schedule key={`sch-${team.key}-${season}`} team={team} season={season} />
         )}

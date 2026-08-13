@@ -2,6 +2,7 @@
 // can validate a `tab` parameter without importing a component.
 export const TABS = [
   { id: 'schedule', label: 'Schedule & scores', shortLabel: 'Scores' },
+  { id: 'archive', label: 'Chicago archive', shortLabel: 'Archive' },
   { id: 'roster', label: 'Roster', shortLabel: 'Roster' },
   { id: 'players', label: 'Player stats', shortLabel: 'Players' },
   { id: 'stats', label: 'Team stats', shortLabel: 'Team' },
