@@ -51,9 +51,24 @@ export default function App() {
   const [includeOlder, setIncludeOlder] = useState(initial.includeOlder)
   const [playerFocus, setPlayerFocus] = useState(null)
 
+  const scrollToPanel = useCallback((nextTab) => {
+    // Wait for React to replace the active panel before moving it into view.
+    // This is especially important on phones, where the season dashboard is
+    // tall enough that a tab change can otherwise appear to do nothing.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'auto'
+          : 'smooth'
+        document.getElementById(`panel-${nextTab}`)?.scrollIntoView({ behavior, block: 'start' })
+      })
+    })
+  }, [])
+
   const selectTab = useCallback((nextTab) => {
     setTab(nextTab)
-  }, [])
+    scrollToPanel(nextTab)
+  }, [scrollToPanel])
 
   const moveTab = useCallback(
     (event, index) => {
@@ -109,8 +124,8 @@ export default function App() {
 
   const openPlayer = useCallback((name) => {
     setPlayerFocus(name)
-    setTab('players')
-  }, [])
+    selectTab('players')
+  }, [selectTab])
 
   const overviewState = useAsync(
     ({ fresh }) =>

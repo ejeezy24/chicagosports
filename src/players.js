@@ -368,6 +368,12 @@ const NBA_POSITION_GROUP = {
   C: 'Centers',
 }
 
+const nbaPositionGroup = (position) => {
+  const value = String(position ?? '').toUpperCase()
+  const primary = ['G', 'F', 'C'].find((code) => value.includes(code))
+  return NBA_POSITION_GROUP[primary] ?? 'Other'
+}
+
 const nbaHeight = (height) => {
   const match = String(height ?? '').match(/^(\d+)-(\d+)$/)
   return match ? `${match[1]}' ${match[2]}"` : (height || null)
@@ -380,8 +386,7 @@ export function nbaRosterGroups(payload) {
   const buckets = new Map()
 
   for (const player of roster) {
-    const primary = String(player.POSITION ?? '').charAt(0)
-    const label = NBA_POSITION_GROUP[primary] ?? 'Other'
+    const label = nbaPositionGroup(player.POSITION)
     if (!buckets.has(label)) buckets.set(label, [])
     buckets.get(label).push({
       id: player.PLAYER_ID ?? player.PLAYER,

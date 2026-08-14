@@ -1039,8 +1039,8 @@ test('NBA result sets, roster rows and season totals are normalized', () => {
         name: 'CommonTeamRoster',
         headers: ['PLAYER_ID', 'PLAYER', 'NUM', 'POSITION', 'HEIGHT', 'WEIGHT', 'AGE', 'SCHOOL'],
         rowSet: [
-          [893, 'Michael Jordan', '23', 'G', '6-6', '216', 33, 'North Carolina'],
-          [23, 'Scottie Pippen', '33', 'F', '6-8', '228', 30, 'Central Arkansas'],
+          [893, 'Michael Jordan', '23', 'SG', '6-6', '216', 33, 'North Carolina'],
+          [23, 'Scottie Pippen', '33', 'SF', '6-8', '228', 30, 'Central Arkansas'],
           [29, 'Luc Longley', '13', 'C', '7-2', '265', 27, 'New Mexico'],
         ],
       },
