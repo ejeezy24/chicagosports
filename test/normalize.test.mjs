@@ -42,6 +42,7 @@ import { sportsReference } from '../src/references.js'
 import { DEFAULT_TEAM, resolveState, toSearch } from '../src/urlState.js'
 import { ownDivisionFirst } from '../src/espn.js'
 import { coverageNote } from '../src/coverage.js'
+import { ARCHIVE, RIVALRIES, allArchiveEntries, cityChampionships } from '../src/archiveData.js'
 
 const cubs = teamByKey('cubs')
 const bulls = teamByKey('bulls')
@@ -1079,6 +1080,17 @@ test('NBA result sets, roster rows and season totals are normalized', () => {
   assert.equal(stats.rows[0].values[stats.columns.indexOf('3P%')], '.427')
   assert.deepEqual(nbaRosterGroups(null), [])
   assert.deepEqual(nbaPlayerStats(null), [])
+})
+
+test('the archive discovery index covers every club, championship, leader and rivalry', () => {
+  const entries = allArchiveEntries()
+  const titles = cityChampionships()
+  assert.equal(titles.length, Object.values(ARCHIVE).reduce((sum, club) => sum + club.championships.length, 0))
+  assert.deepEqual(new Set(entries.map((entry) => entry.teamKey)), new Set(TEAMS.map((team) => team.key)))
+  assert.ok(Object.values(ARCHIVE).every((club) => club.leaders.length >= 4))
+  assert.ok(entries.some((entry) => entry.type === 'Championship' && entry.title === '1996 title'))
+  assert.ok(entries.some((entry) => entry.type === 'Leader' && entry.title === 'Walter Payton'))
+  assert.ok(RIVALRIES.every((rivalry) => rivalry.moments.length >= 3))
 })
 
 test('the 1995-96 Bulls archive survives NBA Stats outages', () => {

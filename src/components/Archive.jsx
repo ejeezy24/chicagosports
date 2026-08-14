@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { getPlayerStats, getSchedule, isHistorical } from '../api.js'
-import { ARCHIVE, allArchiveEntries, closestAnniversary } from '../archiveData.js'
+import { ARCHIVE, RIVALRIES, allArchiveEntries, cityChampionships, closestAnniversary } from '../archiveData.js'
 import { recordFromGames, scheduleEvents } from '../espn.js'
 import {
   espnPlayerStats,
@@ -18,8 +18,9 @@ const VIEWS = [
   ['story', 'Season story'],
   ['compare', 'Compare'],
   ['history', 'Timeline'],
-  ['records', 'Records'],
-  ['search', 'Player search'],
+  ['records', 'Leaders'],
+  ['rivalries', 'Rivalries'],
+  ['search', 'Search'],
   ['favorites', 'Favorites'],
 ]
 
@@ -70,6 +71,11 @@ export function Archive({ team, season, seasons }) {
       aside={`${ARCHIVE[team.key].championships.length} championships`}
       note="Live season feeds power the story and comparisons. The timeline and franchise records are curated from official league and club history pages."
     >
+      <div className="provenance-strip" aria-label="Archive data guide">
+        <span><i className="source-dot verified" /> Curated and verified</span>
+        <span><i className="source-dot live" /> League feed</span>
+        <span><i className="source-dot local" /> Saved on this device</span>
+      </div>
       <div className="archive-nav" aria-label="Archive sections">
         {VIEWS.map(([id, label]) => (
           <button key={id} aria-pressed={view === id} onClick={() => setView(id)}>{label}</button>
@@ -94,6 +100,7 @@ export function Archive({ team, season, seasons }) {
       ) : null}
       {view === 'history' ? <HistoryView team={team} toggleFavorite={toggleFavorite} favorites={favorites} /> : null}
       {view === 'records' ? <RecordsView toggleFavorite={toggleFavorite} favorites={favorites} /> : null}
+      {view === 'rivalries' ? <RivalriesView team={team} toggleFavorite={toggleFavorite} favorites={favorites} /> : null}
       {view === 'search' ? <SearchView team={team} season={season} data={state.data} toggleFavorite={toggleFavorite} favorites={favorites} /> : null}
       {view === 'favorites' ? <FavoritesView favorites={favorites} toggleFavorite={toggleFavorite} /> : null}
     </Panel>
@@ -192,50 +199,107 @@ function SeasonStory({ team, season, data, toggleFavorite, favorites }) {
 }
 
 function CompareView({ team, season, seasons, compareSeason, setCompareSeason, current, comparison }) {
+  const [mode, setMode] = useState('players')
   const currentGames = scheduleEvents(current.data?.regular, team.espnId).filter((game) => game.completed)
   const otherGames = scheduleEvents(comparison.data, team.espnId).filter((game) => game.completed)
   const a = seasonMetrics(currentGames)
   const b = seasonMetrics(otherGames)
   return (
     <div className="archive-body">
-      <div className="compare-controls">
-        <strong>{seasonLabel(team, season)}</strong>
-        <span>versus</span>
-        <label>
-          <span className="sr-only">Comparison season</span>
-          <select value={compareSeason} onChange={(event) => setCompareSeason(Number(event.target.value))}>
-            {seasons.filter((value) => value !== season).map((value) => <option key={value} value={value}>{seasonLabel(team, value)}</option>)}
-          </select>
-        </label>
+      <div className="compare-mode" aria-label="Comparison type">
+        <button aria-pressed={mode === 'players'} onClick={() => setMode('players')}>Player vs. player</button>
+        <button aria-pressed={mode === 'seasons'} onClick={() => setMode('seasons')}>Season vs. season</button>
       </div>
-      <Async state={current} what="the selected season" rows={4} isEmpty={(data) => !data?.regular} empty="No regular-season games are available to compare.">
-        {() => <Async state={comparison} what="the comparison season" rows={4} isEmpty={(data) => !data} empty="No games are available for the comparison season.">
-        {() => (
-          <div className="compare-board">
-            <CompareRow label="Record" a={a.record.text} b={b.record.text} />
-            <CompareRow label="Win percentage" a={pct(a.record)} b={pct(b.record)} />
-            <CompareRow label="Points / runs scored" a={a.scored} b={b.scored} />
-            <CompareRow label="Points / runs allowed" a={a.allowed} b={b.allowed} lower />
-            <CompareRow label="Longest win streak" a={a.streak} b={b.streak} />
-            <CompareRow label="Best win margin" a={a.biggest} b={b.biggest} />
+      {mode === 'players' ? (
+        <Async state={current} what="player statistics" rows={5} isEmpty={(data) => !data?.players} empty="No player statistics are available for this season.">
+          {(data) => <PlayerCompare team={team} season={season} payload={data.players} />}
+        </Async>
+      ) : (
+        <>
+          <div className="compare-controls">
+            <strong>{seasonLabel(team, season)}</strong>
+            <span>versus</span>
+            <label>
+              <span className="sr-only">Comparison season</span>
+              <select value={compareSeason} onChange={(event) => setCompareSeason(Number(event.target.value))}>
+                {seasons.filter((value) => value !== season).map((value) => <option key={value} value={value}>{seasonLabel(team, value)}</option>)}
+              </select>
+            </label>
           </div>
-        )}
-        </Async>}
-      </Async>
+          <Async state={current} what="the selected season" rows={4} isEmpty={(data) => !data?.regular} empty="No regular-season games are available to compare.">
+            {() => <Async state={comparison} what="the comparison season" rows={4} isEmpty={(data) => !data} empty="No games are available for the comparison season.">
+            {() => (
+              <div className="compare-board">
+                <CompareRow label="Record" a={a.record.text} b={b.record.text} />
+                <CompareRow label="Win percentage" a={pct(a.record)} b={pct(b.record)} />
+                <CompareRow label="Points / runs scored" a={a.scored} b={b.scored} />
+                <CompareRow label="Points / runs allowed" a={a.allowed} b={b.allowed} lower />
+                <CompareRow label="Longest win streak" a={a.streak} b={b.streak} />
+                <CompareRow label="Best win margin" a={a.biggest} b={b.biggest} />
+              </div>
+            )}
+            </Async>}
+          </Async>
+        </>
+      )}
     </div>
   )
 }
 
+function PlayerCompare({ team, season, payload }) {
+  const choices = normalizePlayerGroups(team, season, payload).flatMap((group) =>
+    group.rows.map((row) => ({
+      ...row,
+      key: `${group.name}:${row.id ?? row.name}`,
+      group: group.name,
+      columns: group.columns,
+    })),
+  )
+  const [leftKey, setLeftKey] = useState(() => choices[0]?.key ?? '')
+  const [rightKey, setRightKey] = useState(() => choices[1]?.key ?? choices[0]?.key ?? '')
+  const left = choices.find((row) => row.key === leftKey) ?? choices[0]
+  const right = choices.find((row) => row.key === rightKey) ?? choices[1] ?? choices[0]
+  if (!left || !right) return <div className="archive-empty">Not enough player lines are available to compare.</div>
+
+  const columns = [...new Set([...left.columns, ...right.columns])]
+  const valueFor = (player, column) => {
+    const index = player.columns.indexOf(column)
+    return index >= 0 ? player.values[index] : '—'
+  }
+
+  return (
+    <>
+      <div className="player-compare-pickers">
+        <label><span>Player one</span><select value={left.key} onChange={(event) => setLeftKey(event.target.value)}>{choices.map((row) => <option key={row.key} value={row.key}>{row.name} · {row.group}</option>)}</select></label>
+        <b>VS</b>
+        <label><span>Player two</span><select value={right.key} onChange={(event) => setRightKey(event.target.value)}>{choices.map((row) => <option key={row.key} value={row.key}>{row.name} · {row.group}</option>)}</select></label>
+      </div>
+      <div className="comparison-names"><strong>{left.name}</strong><span>{seasonLabel(team, season)}</span><strong>{right.name}</strong></div>
+      <div className="compare-board">
+        {columns.map((column) => <CompareRow key={column} label={column} a={valueFor(left, column)} b={valueFor(right, column)} />)}
+      </div>
+    </>
+  )
+}
+
 function HistoryView({ team, toggleFavorite, favorites }) {
+  const [scope, setScope] = useState('team')
   const data = ARCHIVE[team.key]
+  const cityTitles = cityChampionships()
   return (
     <div className="archive-body">
       <section className="title-case">
-        <span className="archive-kicker">Championship hub</span>
-        <h3>{data.championships.length} titles</h3>
-        <div className="ring-row">{data.championships.map((year) => <span key={year}>★ {year}</span>)}</div>
+        <div className="title-case-head">
+          <div><span className="archive-kicker">Championship hub</span><h3>{scope === 'team' ? `${data.championships.length} ${team.short} titles` : `${cityTitles.length} Chicago titles`}</h3></div>
+          <div className="compare-mode"><button aria-pressed={scope === 'team'} onClick={() => setScope('team')}>{team.short}</button><button aria-pressed={scope === 'city'} onClick={() => setScope('city')}>All Chicago</button></div>
+        </div>
+        <div className="ring-row">
+          {scope === 'team'
+            ? data.championships.map((year) => <span key={year}>★ {year}</span>)
+            : cityTitles.map(({ year, teamKey }) => <span key={`${teamKey}-${year}`} style={{ borderColor: teamByKey(teamKey).color }}>{year} · {teamByKey(teamKey).short}</span>)}
+        </div>
       </section>
-      <div className="history-timeline">
+      {scope === 'team' ? <div className="history-timeline">
         {data.moments.map((moment) => {
           const entry = { ...moment, teamKey: team.key, type: 'Moment' }
           return (
@@ -246,7 +310,10 @@ function HistoryView({ team, toggleFavorite, favorites }) {
             </article>
           )
         })}
-      </div>
+      </div> : <div className="city-title-list">{cityTitles.map(({ year, teamKey }) => {
+        const club = teamByKey(teamKey)
+        return <article key={`${teamKey}-${year}`}><strong>{year}</strong><span style={{ color: club.color }}>{club.name}</span><em>Champions</em></article>
+      })}</div>}
       <SourceLink data={data} />
     </div>
   )
@@ -255,19 +322,39 @@ function HistoryView({ team, toggleFavorite, favorites }) {
 function RecordsView({ toggleFavorite, favorites }) {
   return (
     <div className="archive-body record-grid">
-      {Object.entries(ARCHIVE).map(([key, data]) => {
+      {Object.entries(ARCHIVE).flatMap(([key, data]) => {
         const team = teamByKey(key)
-        const entry = { teamKey: key, type: 'Record', title: data.record.holder, detail: `${data.record.value} ${data.record.label.toLowerCase()}` }
-        return (
-          <article className="record-card" key={key} style={{ '--record-color': team.color }}>
+        return (data.leaders ?? [data.record]).map((leader) => {
+          const entry = { teamKey: key, type: 'Leader', title: leader.holder, detail: `${leader.value} ${leader.label.toLowerCase()}` }
+          return <article className="record-card" key={`${key}-${leader.label}`} style={{ '--record-color': team.color }}>
             <span>{team.name}</span>
-            <strong>{data.record.value}</strong>
-            <h4>{data.record.holder}</h4>
-            <p>{data.record.label}</p>
+            <strong>{leader.value}</strong>
+            <h4>{leader.holder}</h4>
+            <p>{leader.label}</p>
             <div><FavoriteButton entry={entry} favorites={favorites} toggle={toggleFavorite} /> <SourceLink data={data} compact /></div>
           </article>
-        )
+        })
       })}
+    </div>
+  )
+}
+
+function RivalriesView({ team, toggleFavorite, favorites }) {
+  const relevant = RIVALRIES.filter((rivalry) => rivalry.teamKeys.includes(team.key))
+  const rest = RIVALRIES.filter((rivalry) => !rivalry.teamKeys.includes(team.key))
+  return (
+    <div className="archive-body">
+      <section className="rivalry-intro"><span className="archive-kicker">Chicago rivalry dossiers</span><h3>{team.short} feuds first. Citywide history after.</h3><p>Curated chapters, defining postseason meetings, and the games that made the opponent matter.</p></section>
+      <div className="rivalry-grid">
+        {[...relevant, ...rest].map((rivalry) => {
+          const entry = { teamKey: rivalry.teamKeys[0], type: 'Rivalry', title: rivalry.nickname, detail: rivalry.detail }
+          return <article key={rivalry.id} className={relevant.includes(rivalry) ? 'is-featured' : ''}>
+            <span>{rivalry.era}</span><h4>{rivalry.nickname}</h4><strong>{rivalry.opponent}</strong><p>{rivalry.detail}</p>
+            <ul>{rivalry.moments.map((moment) => <li key={moment}>{moment}</li>)}</ul>
+            <FavoriteButton entry={entry} favorites={favorites} toggle={toggleFavorite} />
+          </article>
+        })}
+      </div>
     </div>
   )
 }

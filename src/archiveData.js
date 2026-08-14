@@ -2,6 +2,12 @@ export const ARCHIVE = {
   cubs: {
     championships: [1907, 1908, 2016],
     record: { label: 'Career home runs', value: '545', holder: 'Sammy Sosa' },
+    leaders: [
+      { label: 'Career home runs', value: '545', holder: 'Sammy Sosa' },
+      { label: 'Career hits', value: '3,012', holder: 'Cap Anson' },
+      { label: 'Pitching wins', value: '201', holder: 'Charlie Root' },
+      { label: 'Career strikeouts', value: '2,038', holder: 'Fergie Jenkins' },
+    ],
     source: { label: 'Cubs history', url: 'https://www.mlb.com/cubs/history' },
     legends: ['Ernie Banks', 'Ryne Sandberg', 'Sammy Sosa', 'Fergie Jenkins', 'Ron Santo', 'Billy Williams'],
     moments: [
@@ -13,6 +19,12 @@ export const ARCHIVE = {
   whitesox: {
     championships: [1906, 1917, 2005],
     record: { label: 'Career home runs', value: '448', holder: 'Frank Thomas' },
+    leaders: [
+      { label: 'Career home runs', value: '448', holder: 'Frank Thomas' },
+      { label: 'Career hits', value: '2,749', holder: 'Luke Appling' },
+      { label: 'Pitching wins', value: '260', holder: 'Ted Lyons' },
+      { label: 'Career strikeouts', value: '1,796', holder: 'Billy Pierce' },
+    ],
     source: { label: 'White Sox history', url: 'https://www.mlb.com/whitesox/history' },
     legends: ['Frank Thomas', 'Paul Konerko', 'Minnie Miñoso', 'Luis Aparicio', 'Nellie Fox', 'Mark Buehrle'],
     moments: [
@@ -24,6 +36,12 @@ export const ARCHIVE = {
   bears: {
     championships: [1921, 1932, 1933, 1940, 1941, 1943, 1946, 1963, 1985],
     record: { label: 'Career rushing yards', value: '16,726', holder: 'Walter Payton' },
+    leaders: [
+      { label: 'Career rushing yards', value: '16,726', holder: 'Walter Payton' },
+      { label: 'Career passing yards', value: '23,443', holder: 'Jay Cutler' },
+      { label: 'Career receiving yards', value: '5,059', holder: 'Johnny Morris' },
+      { label: 'Career sacks', value: '124.5', holder: 'Richard Dent' },
+    ],
     source: { label: 'Bears history', url: 'https://www.chicagobears.com/team/history/' },
     legends: ['Walter Payton', 'Dick Butkus', 'Gale Sayers', 'Mike Ditka', 'Brian Urlacher', 'Sid Luckman'],
     moments: [
@@ -35,6 +53,12 @@ export const ARCHIVE = {
   bulls: {
     championships: [1991, 1992, 1993, 1996, 1997, 1998],
     record: { label: 'Career points', value: '29,277', holder: 'Michael Jordan' },
+    leaders: [
+      { label: 'Career points', value: '29,277', holder: 'Michael Jordan' },
+      { label: 'Career assists', value: '5,012', holder: 'Michael Jordan' },
+      { label: 'Career rebounds', value: '5,836', holder: 'Michael Jordan' },
+      { label: 'Career blocks', value: '1,029', holder: 'Artis Gilmore' },
+    ],
     source: { label: 'Bulls team history', url: 'https://www.nba.com/team/1610612741/bulls' },
     legends: ['Michael Jordan', 'Scottie Pippen', 'Dennis Rodman', 'Derrick Rose', 'Artis Gilmore', 'Toni Kukoč'],
     moments: [
@@ -46,6 +70,12 @@ export const ARCHIVE = {
   blackhawks: {
     championships: [1934, 1938, 1961, 2010, 2013, 2015],
     record: { label: 'Career points', value: '1,467', holder: 'Stan Mikita' },
+    leaders: [
+      { label: 'Career points', value: '1,467', holder: 'Stan Mikita' },
+      { label: 'Career goals', value: '604', holder: 'Bobby Hull' },
+      { label: 'Career assists', value: '926', holder: 'Stan Mikita' },
+      { label: 'Goaltender wins', value: '418', holder: 'Tony Esposito' },
+    ],
     source: { label: 'Blackhawks records', url: 'https://records.nhl.com/chi/records/skater-records/points/most-points-career' },
     legends: ['Stan Mikita', 'Bobby Hull', 'Patrick Kane', 'Jonathan Toews', 'Tony Esposito', 'Denis Savard'],
     moments: [
@@ -57,11 +87,48 @@ export const ARCHIVE = {
   },
 }
 
+export const RIVALRIES = [
+  {
+    id: 'crosstown', teamKeys: ['cubs', 'whitesox'], opponent: 'Chicago Cubs vs. Chicago White Sox',
+    nickname: 'Crosstown Classic', era: '1906–present',
+    detail: 'North Side and South Side share a city, split a summer, and meet in games that turn neighborhood loyalty into the score.',
+    moments: ['1906 World Series', 'Interleague play begins in 1997', 'The annual city series'],
+  },
+  {
+    id: 'bears-packers', teamKeys: ['bears'], opponent: 'Green Bay Packers',
+    nickname: 'The NFL’s oldest feud', era: '1921–present',
+    detail: 'Two charter-era powers built a border rivalry around cold weather, division titles, and generations of Hall of Famers.',
+    moments: ['The rivalry begins in 1921', '1963 title race', '2010 NFC Championship'],
+  },
+  {
+    id: 'bulls-pistons', teamKeys: ['bulls'], opponent: 'Detroit Pistons',
+    nickname: 'Bad Boys vs. the Bulls', era: '1988–1991',
+    detail: 'Detroit blocked Chicago three straight postseasons before the Bulls broke through in 1991 and launched their dynasty.',
+    moments: ['Jordan Rules', '1990 seven-game conference final', '1991 breakthrough sweep'],
+  },
+  {
+    id: 'hawks-wings', teamKeys: ['blackhawks'], opponent: 'Detroit Red Wings',
+    nickname: 'Original Six border war', era: '1926–present',
+    detail: 'An Original Six rivalry connected by geography, divisional history, and some of the loudest nights in Chicago hockey.',
+    moments: ['Original Six era', '1961 Stanley Cup Final', '2013 seven-game comeback'],
+  },
+]
+
+export const cityChampionships = () =>
+  Object.entries(ARCHIVE)
+    .flatMap(([teamKey, data]) => data.championships.map((year) => ({ year, teamKey })))
+    .sort((a, b) => b.year - a.year)
+
 export const allArchiveEntries = () =>
   Object.entries(ARCHIVE).flatMap(([teamKey, data]) => [
     ...data.legends.map((name) => ({ type: 'Player', title: name, detail: 'Chicago legend', teamKey })),
     ...data.moments.map((moment) => ({ type: 'Moment', title: moment.title, detail: moment.detail, teamKey, ...moment })),
-  ])
+    ...data.championships.map((year) => ({ type: 'Championship', title: `${year} title`, detail: `${year} championship season`, teamKey, season: year })),
+    ...(data.leaders ?? [data.record]).map((leader) => ({ type: 'Leader', title: leader.holder, detail: `${leader.value} ${leader.label.toLowerCase()}`, teamKey })),
+  ]).concat(RIVALRIES.map((rivalry) => ({
+    type: 'Rivalry', title: rivalry.nickname, detail: `${rivalry.opponent} · ${rivalry.detail}`,
+    teamKey: rivalry.teamKeys[0],
+  })))
 
 export function closestAnniversary(teamKey, now = new Date()) {
   const moments = ARCHIVE[teamKey]?.moments ?? []
