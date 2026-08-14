@@ -151,6 +151,9 @@ export function withLiveScores(games, scores) {
 }
 
 export function scheduleEvents(payload, espnTeamId) {
+  if (Array.isArray(payload?.games)) {
+    return [...payload.games].sort((a, b) => new Date(a.date ?? 0) - new Date(b.date ?? 0))
+  }
   const events = payload?.events ?? []
   return events
     .map((e) => normalizeEvent(e, espnTeamId))

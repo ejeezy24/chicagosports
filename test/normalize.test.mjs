@@ -234,6 +234,19 @@ test('ties are counted separately', () => {
   assert.equal(rec.text, '2-1-1')
 })
 
+test('verified historical NFL schedules pass through without ESPN renormalization', () => {
+  const games = Array.from({ length: 16 }, (_, index) => ({
+    id: `archive-${index}`,
+    date: `1985-${String(Math.floor(index / 4) + 9).padStart(2, '0')}-${String((index % 4) * 7 + 1).padStart(2, '0')}T12:00:00Z`,
+    result: index === 12 ? 'L' : 'W',
+    completed: true,
+  })).reverse()
+  const normalized = scheduleEvents({ source: 'FiveThirtyEight NFL game archive', games }, '3')
+  assert.equal(normalized.length, 16)
+  assert.equal(normalized[0].id, 'archive-0')
+  assert.equal(recordFromGames(normalized).text, '15-1')
+})
+
 test('grouped rosters keep their position headings', () => {
   const groups = rosterGroups({
     athletes: [

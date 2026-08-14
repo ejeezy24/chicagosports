@@ -117,6 +117,11 @@ export function Schedule({ team, season }) {
           let month = null
           return (
             <>
+              {state.data?.source ? (
+                <div className="schedule-source">
+                  Verified historical scores from <a href={state.data.sourceUrl} target="_blank" rel="noreferrer">{state.data.source}</a>. ESPN remains the source for current schedules and game files.
+                </div>
+              ) : null}
               <div className="summary">
                 <div>
                   <span>Record</span>

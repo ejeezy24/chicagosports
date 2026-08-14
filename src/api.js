@@ -185,6 +185,13 @@ export function getScoreboard(team, { fresh } = {}) {
 
 /** Every game for one season and season type (1 pre, 2 regular, 3 post). */
 export function getSchedule(team, season, seasonType = 2, { fresh } = {}) {
+  if (team.sport === 'football' && Number(season) <= 2021 && [2, 3].includes(Number(seasonType))) {
+    return request('own', '/api/nfl-schedule', {
+      season,
+      team: team.abbr,
+      seasonType,
+    })
+  }
   return request(
     'site',
     `${leaguePath(team)}/teams/${team.espnId}/schedule`,

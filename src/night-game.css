@@ -532,6 +532,16 @@ select,
   color: #fff;
 }
 
+.schedule-source {
+  padding: 10px 14px;
+  border-bottom: 2px solid var(--line);
+  background: color-mix(in srgb, var(--team) 9%, var(--panel-2));
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+.schedule-source a { font-weight: 700; }
+
 .summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
