@@ -170,7 +170,7 @@ const GameRow = memo(function GameRow({ game, team }) {
   const [open, setOpen] = useState(false)
   const panelId = useId()
   // Nothing to show for a game that hasn't been played yet.
-  const canExpand = game.completed || game.state === 'in'
+  const canExpand = game.hasBoxscore !== false && (game.completed || game.state === 'in')
 
   // Kept as parts rather than a joined string so the venue can carry its own
   // hover card; away grounds fall back to plain text inside <Venue>.

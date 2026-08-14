@@ -54,6 +54,7 @@ function gameFromRow(row, team, season) {
     result,
     state: 'post',
     completed: true,
+    hasBoxscore: false,
     detail: 'Final',
     venue: null,
     venueCity: null,
