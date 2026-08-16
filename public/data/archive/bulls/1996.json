@@ -1,0 +1,355 @@
+{
+  "schemaVersion": 1,
+  "team": "bulls",
+  "league": "nba",
+  "season": 1996,
+  "label": "1995-96",
+  "importedAt": "2026-08-16T02:46:17.366Z",
+  "sources": {
+    "roster": "Verified season archive",
+    "players": "Verified season archive"
+  },
+  "coverage": {
+    "roster": "complete",
+    "players": "complete"
+  },
+  "roster": {
+    "season": "1995-96",
+    "teamId": "1610612741",
+    "source": "Verified season archive",
+    "archived": true,
+    "roster": [
+      {
+        "PLAYER": "Michael Jordan",
+        "NUM": "23",
+        "POSITION": "SG",
+        "PLAYER_ID": 893
+      },
+      {
+        "PLAYER": "Scottie Pippen",
+        "NUM": "33",
+        "POSITION": "SF",
+        "PLAYER_ID": 937
+      },
+      {
+        "PLAYER": "Dennis Rodman",
+        "NUM": "91",
+        "POSITION": "PF",
+        "PLAYER_ID": 23
+      },
+      {
+        "PLAYER": "Ron Harper",
+        "NUM": "9",
+        "POSITION": "SG",
+        "PLAYER_ID": 166
+      },
+      {
+        "PLAYER": "Luc Longley",
+        "NUM": "13",
+        "POSITION": "C",
+        "PLAYER_ID": 915
+      },
+      {
+        "PLAYER": "Toni Kukoc",
+        "NUM": "7",
+        "POSITION": "SF",
+        "PLAYER_ID": 389
+      },
+      {
+        "PLAYER": "Steve Kerr",
+        "NUM": "25",
+        "POSITION": "PG",
+        "PLAYER_ID": 703
+      },
+      {
+        "PLAYER": "Bill Wennington",
+        "NUM": "34",
+        "POSITION": "C",
+        "PLAYER_ID": 178
+      },
+      {
+        "PLAYER": "Dickey Simpkins",
+        "NUM": "8",
+        "POSITION": "PF",
+        "PLAYER_ID": null
+      },
+      {
+        "PLAYER": "John Salley",
+        "NUM": "22",
+        "POSITION": "C",
+        "PLAYER_ID": 22
+      },
+      {
+        "PLAYER": "Jud Buechler",
+        "NUM": "30",
+        "POSITION": "SF",
+        "PLAYER_ID": null
+      },
+      {
+        "PLAYER": "Randy Brown",
+        "NUM": "0",
+        "POSITION": "PG",
+        "PLAYER_ID": null
+      },
+      {
+        "PLAYER": "James Edwards",
+        "NUM": "53",
+        "POSITION": "C",
+        "PLAYER_ID": null
+      },
+      {
+        "PLAYER": "Jason Caffey",
+        "NUM": "35",
+        "POSITION": "PF",
+        "PLAYER_ID": null
+      },
+      {
+        "PLAYER": "Jack Haley",
+        "NUM": "44",
+        "POSITION": "C",
+        "PLAYER_ID": null
+      }
+    ],
+    "coaches": [
+      {
+        "COACH_NAME": "Phil Jackson",
+        "IS_ASSISTANT": 0
+      }
+    ]
+  },
+  "players": {
+    "season": "1995-96",
+    "teamId": "1610612741",
+    "source": "Verified season archive",
+    "archived": true,
+    "perMode": "PerGame",
+    "players": [
+      {
+        "PLAYER_NAME": "Michael Jordan",
+        "PLAYER_ID": 893,
+        "GP": 82,
+        "MIN": 37.7,
+        "PTS": 30.4,
+        "REB": 6.6,
+        "AST": 4.3,
+        "STL": 2.2,
+        "BLK": 0.5,
+        "TOV": 2.4,
+        "FG_PCT": 0.495,
+        "FG3_PCT": 0.427,
+        "FT_PCT": 0.834
+      },
+      {
+        "PLAYER_NAME": "Scottie Pippen",
+        "PLAYER_ID": 937,
+        "GP": 77,
+        "MIN": 36.7,
+        "PTS": 19.4,
+        "REB": 6.4,
+        "AST": 5.9,
+        "STL": 1.7,
+        "BLK": 0.7,
+        "TOV": 2.7,
+        "FG_PCT": 0.463,
+        "FG3_PCT": 0.374,
+        "FT_PCT": 0.679
+      },
+      {
+        "PLAYER_NAME": "Toni Kukoc",
+        "PLAYER_ID": 389,
+        "GP": 81,
+        "MIN": 26,
+        "PTS": 13.1,
+        "REB": 4,
+        "AST": 3.5,
+        "STL": 0.8,
+        "BLK": 0.3,
+        "TOV": 1.4,
+        "FG_PCT": 0.49,
+        "FG3_PCT": 0.403,
+        "FT_PCT": 0.772
+      },
+      {
+        "PLAYER_NAME": "Luc Longley",
+        "PLAYER_ID": 915,
+        "GP": 62,
+        "MIN": 26.5,
+        "PTS": 9.1,
+        "REB": 5.1,
+        "AST": 1.9,
+        "STL": 0.4,
+        "BLK": 1.4,
+        "TOV": 1.8,
+        "FG_PCT": 0.482,
+        "FG3_PCT": 0,
+        "FT_PCT": 0.777
+      },
+      {
+        "PLAYER_NAME": "Steve Kerr",
+        "PLAYER_ID": 703,
+        "GP": 82,
+        "MIN": 23.4,
+        "PTS": 8.4,
+        "REB": 1.3,
+        "AST": 2.3,
+        "STL": 0.8,
+        "BLK": 0,
+        "TOV": 0.5,
+        "FG_PCT": 0.506,
+        "FG3_PCT": 0.515,
+        "FT_PCT": 0.929
+      },
+      {
+        "PLAYER_NAME": "Ron Harper",
+        "PLAYER_ID": 166,
+        "GP": 80,
+        "MIN": 23.6,
+        "PTS": 7.4,
+        "REB": 2.7,
+        "AST": 2.6,
+        "STL": 1.3,
+        "BLK": 0.4,
+        "TOV": 0.9,
+        "FG_PCT": 0.467,
+        "FG3_PCT": 0.269,
+        "FT_PCT": 0.705
+      },
+      {
+        "PLAYER_NAME": "Dennis Rodman",
+        "PLAYER_ID": 23,
+        "GP": 64,
+        "MIN": 32.6,
+        "PTS": 5.5,
+        "REB": 14.9,
+        "AST": 2.5,
+        "STL": 0.6,
+        "BLK": 0.4,
+        "TOV": 2.2,
+        "FG_PCT": 0.48,
+        "FG3_PCT": 0.111,
+        "FT_PCT": 0.528
+      },
+      {
+        "PLAYER_NAME": "Bill Wennington",
+        "PLAYER_ID": 178,
+        "GP": 71,
+        "MIN": 15,
+        "PTS": 5.3,
+        "REB": 2.5,
+        "AST": 0.6,
+        "STL": 0.3,
+        "BLK": 0.2,
+        "TOV": 0.5,
+        "FG_PCT": 0.493,
+        "FG3_PCT": 1,
+        "FT_PCT": 0.86
+      },
+      {
+        "PLAYER_NAME": "Jud Buechler",
+        "PLAYER_ID": null,
+        "GP": 74,
+        "MIN": 10,
+        "PTS": 3.8,
+        "REB": 1.5,
+        "AST": 0.8,
+        "STL": 0.5,
+        "BLK": 0.1,
+        "TOV": 0.5,
+        "FG_PCT": 0.463,
+        "FG3_PCT": 0.444,
+        "FT_PCT": 0.636
+      },
+      {
+        "PLAYER_NAME": "Dickey Simpkins",
+        "PLAYER_ID": null,
+        "GP": 60,
+        "MIN": 11.4,
+        "PTS": 3.6,
+        "REB": 2.6,
+        "AST": 0.6,
+        "STL": 0.1,
+        "BLK": 0.1,
+        "TOV": 0.9,
+        "FG_PCT": 0.481,
+        "FG3_PCT": 1,
+        "FT_PCT": 0.629
+      },
+      {
+        "PLAYER_NAME": "James Edwards",
+        "PLAYER_ID": null,
+        "GP": 28,
+        "MIN": 9.8,
+        "PTS": 3.5,
+        "REB": 1.4,
+        "AST": 0.4,
+        "STL": 0,
+        "BLK": 0.3,
+        "TOV": 0.8,
+        "FG_PCT": 0.373,
+        "FG3_PCT": 0,
+        "FT_PCT": 0.615
+      },
+      {
+        "PLAYER_NAME": "Jason Caffey",
+        "PLAYER_ID": null,
+        "GP": 57,
+        "MIN": 9.6,
+        "PTS": 3.2,
+        "REB": 1.9,
+        "AST": 0.4,
+        "STL": 0.2,
+        "BLK": 0.1,
+        "TOV": 0.8,
+        "FG_PCT": 0.438,
+        "FG3_PCT": 0,
+        "FT_PCT": 0.588
+      },
+      {
+        "PLAYER_NAME": "Randy Brown",
+        "PLAYER_ID": null,
+        "GP": 68,
+        "MIN": 9.9,
+        "PTS": 2.7,
+        "REB": 1,
+        "AST": 1.1,
+        "STL": 0.8,
+        "BLK": 0.2,
+        "TOV": 0.5,
+        "FG_PCT": 0.406,
+        "FG3_PCT": 0.091,
+        "FT_PCT": 0.609
+      },
+      {
+        "PLAYER_NAME": "John Salley",
+        "PLAYER_ID": 22,
+        "GP": 17,
+        "MIN": 11.2,
+        "PTS": 2.1,
+        "REB": 2.5,
+        "AST": 0.9,
+        "STL": 0.5,
+        "BLK": 0.9,
+        "TOV": 0.9,
+        "FG_PCT": 0.343,
+        "FG3_PCT": 0,
+        "FT_PCT": 0.6
+      },
+      {
+        "PLAYER_NAME": "Jack Haley",
+        "PLAYER_ID": null,
+        "GP": 1,
+        "MIN": 7,
+        "PTS": 5,
+        "REB": 2,
+        "AST": 0,
+        "STL": 0,
+        "BLK": 0,
+        "TOV": 1,
+        "FG_PCT": 0.333,
+        "FG3_PCT": 0,
+        "FT_PCT": 0.5
+      }
+    ],
+    "unavailable": 0
+  }
+}

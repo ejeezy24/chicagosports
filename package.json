@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "archive:import": "node scripts/archive-import.mjs",
+    "archive:validate": "node scripts/archive-validate.mjs",
     "test": "node --test \"test/*.test.mjs\"",
     "lint": "eslint ."
   },

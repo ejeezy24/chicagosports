@@ -7,6 +7,7 @@
 // ESPN, which does send permissive CORS headers.
 
 import { currentSeasonFor, seasonIsComplete } from './seasons.js'
+import { archiveFirst } from './archiveSnapshots.js'
 
 const HOSTS = {
   site: { prefix: '/espn', direct: 'https://site.api.espn.com' },
@@ -210,23 +211,29 @@ export function getRoster(team, season) {
   // comes from MLB instead. The current roster still comes from ESPN, which
   // carries college and headshots that StatsAPI doesn't.
   if (usesArchiveData(team, season)) {
-    if (team.sport === 'baseball') {
-      return request('mlb', `/api/v1/teams/${team.mlbId}/roster`, {
-        rosterType: 'fullSeason',
-        season,
-        hydrate: 'person',
-      })
-    }
-    if (team.sport === 'hockey') {
-      return request('nhl', `/v1/roster/${team.abbr}/${nhlSeason(season)}`)
-    }
-    if (team.sport === 'football') {
-      // Trimmed to this club before it leaves the server; see api/nfl-roster.js.
-      return request('own', '/api/nfl-roster', { season, team: team.abbr })
-    }
-    if (team.sport === 'basketball') {
-      return request('own', '/api/nba-history', { season, mode: 'roster' })
-    }
+    return archiveFirst(team, season, 'roster', () => getArchiveRoster(team, season))
+  }
+
+  return request('site', `${leaguePath(team)}/teams/${team.espnId}/roster`, { season })
+}
+
+function getArchiveRoster(team, season) {
+  if (team.sport === 'baseball') {
+    return request('mlb', `/api/v1/teams/${team.mlbId}/roster`, {
+      rosterType: 'fullSeason',
+      season,
+      hydrate: 'person',
+    })
+  }
+  if (team.sport === 'hockey') {
+    return request('nhl', `/v1/roster/${team.abbr}/${nhlSeason(season)}`)
+  }
+  if (team.sport === 'football') {
+    // Trimmed to this club before it leaves the server; see api/nfl-roster.js.
+    return request('own', '/api/nfl-roster', { season, team: team.abbr })
+  }
+  if (team.sport === 'basketball') {
+    return request('own', '/api/nba-history', { season, mode: 'roster' })
   }
 
   return request('site', `${leaguePath(team)}/teams/${team.espnId}/roster`, { season })
@@ -270,6 +277,24 @@ export function getSummary(team, eventId) {
  * seasons still use ESPN's roster endpoint, which carries player splits.
  */
 export function getPlayerStats(team, season) {
+  if (usesArchiveData(team, season)) {
+    return archiveFirst(team, season, 'players', () => getArchivePlayerStats(team, season))
+  }
+
+  if (team.sport === 'baseball') {
+    return request('mlb', `/api/v1/teams/${team.mlbId}/roster`, {
+      rosterType: 'active',
+      season,
+      hydrate: `person(stats(type=season,season=${season},gameType=R))`,
+    })
+  }
+
+  return request('web', `/apis/common/v3/sports/${team.sport}/${team.league}/teams/${team.espnId}/roster`, {
+    season,
+  })
+}
+
+function getArchivePlayerStats(team, season) {
   // Hockey's own API is season-scoped; ESPN's isn't, so use it for past years.
   // `2` is the regular season.
   if (team.sport === 'hockey' && usesArchiveData(team, season)) {

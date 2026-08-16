@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "seasons": [
+    {
+      "team": "bulls",
+      "season": 2026,
+      "label": "2025-26",
+      "importedAt": "2026-08-16T02:46:20.934Z",
+      "coverage": {
+        "roster": "complete",
+        "players": "complete"
+      },
+      "sources": {
+        "roster": "Verified NBA.com season archive",
+        "players": "Verified NBA.com season archive"
+      }
+    },
+    {
+      "team": "bulls",
+      "season": 1996,
+      "label": "1995-96",
+      "importedAt": "2026-08-16T02:46:17.366Z",
+      "coverage": {
+        "roster": "complete",
+        "players": "complete"
+      },
+      "sources": {
+        "roster": "Verified season archive",
+        "players": "Verified season archive"
+      }
+    }
+  ]
+}

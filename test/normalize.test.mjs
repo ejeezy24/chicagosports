@@ -22,7 +22,7 @@ import {
 } from '../src/espn.js'
 import { currentSeasonFor, seasonIsComplete, seasonLabel, seasonOptions, clampSeason } from '../src/seasons.js'
 import { BACKDROP, TEAMS, accentFor, teamByKey } from '../src/teams.js'
-import { readdir, stat } from 'node:fs/promises'
+import { readFile, readdir, stat } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { IMAGERY_CREDIT, VENUES, venueByName } from '../src/venues.js'
@@ -45,6 +45,7 @@ import { DEFAULT_TEAM, resolveState, toSearch } from '../src/urlState.js'
 import { ownDivisionFirst } from '../src/espn.js'
 import { coverageNote } from '../src/coverage.js'
 import { ARCHIVE, RIVALRIES, allArchiveEntries, cityChampionships } from '../src/archiveData.js'
+import { archiveFirst, archiveSnapshotUrl, loadArchiveSnapshot, validateArchiveSnapshot } from '../src/archiveSnapshots.js'
 
 const cubs = teamByKey('cubs')
 const bulls = teamByKey('bulls')
@@ -1172,6 +1173,59 @@ test('the completed 2025-26 Bulls season uses the verified NBA.com snapshot', ()
     { GP: buzelis.GP, PTS: buzelis.PTS, REB: buzelis.REB, AST: buzelis.AST },
     { GP: 77, PTS: 1252, REB: 448, AST: 158 },
   )
+})
+
+test('saved season snapshots are validated and preferred over a live fallback', async () => {
+  const snapshot = {
+    schemaVersion: 1,
+    team: 'bulls',
+    season: 1996,
+    importedAt: '2026-08-16T00:00:00.000Z',
+    sources: { roster: 'Verified fixture', players: 'Verified fixture' },
+    coverage: { roster: 'complete', players: 'complete' },
+    roster: { roster: [{ PLAYER: 'Michael Jordan' }] },
+    players: { players: [{ PLAYER_NAME: 'Michael Jordan' }] },
+  }
+  const fetcher = async (url) => ({
+    ok: true,
+    status: 200,
+    json: async () => snapshot,
+    url,
+  })
+  let fallbackCalls = 0
+  const roster = await archiveFirst(bulls, 1996, 'roster', () => {
+    fallbackCalls += 1
+    return { roster: [] }
+  }, fetcher)
+
+  assert.equal(archiveSnapshotUrl(bulls, 1996), '/data/archive/bulls/1996.json')
+  assert.equal(validateArchiveSnapshot(snapshot, bulls, 1996), true)
+  assert.equal(roster.roster[0].PLAYER, 'Michael Jordan')
+  assert.equal(roster.archiveSnapshot.source, 'Verified fixture')
+  assert.equal(fallbackCalls, 0)
+})
+
+test('a missing or invalid snapshot safely falls back to the league source', async () => {
+  const missing = await loadArchiveSnapshot(bulls, 1995, async () => ({ ok: false, status: 404 }))
+  assert.equal(missing, null)
+  const result = await archiveFirst(
+    bulls,
+    1995,
+    'players',
+    () => ({ players: ['live'] }),
+    async () => ({ ok: true, status: 200, json: async () => ({ schemaVersion: 99 }) }),
+  )
+  assert.deepEqual(result, { players: ['live'] })
+})
+
+test('checked-in archive files and their coverage index agree', async () => {
+  const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'data', 'archive')
+  const index = JSON.parse(await readFile(join(dir, 'index.json'), 'utf8'))
+  assert.deepEqual(index.seasons.map(({ team, season }) => `${team}:${season}`), ['bulls:2026', 'bulls:1996'])
+  for (const entry of index.seasons) {
+    const snapshot = JSON.parse(await readFile(join(dir, entry.team, `${entry.season}.json`), 'utf8'))
+    assert.equal(validateArchiveSnapshot(snapshot, teamByKey(entry.team), entry.season), true)
+  }
 })
 
 test('Sports Reference is linked for cross-checking, not used as a data feed', () => {
