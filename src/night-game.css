@@ -1268,6 +1268,77 @@ tbody tr.me {
   box-shadow: 6px 6px 0 var(--shadow);
 }
 
+.career-file {
+  border-top: 3px double var(--ink);
+  margin-top: 16px;
+  padding-top: 12px;
+}
+
+.career-toggle {
+  background: var(--ink);
+  border: 0;
+  color: var(--paper);
+  font: inherit;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.career-seasons > p,
+.computed-records > .state + p {
+  color: var(--muted);
+}
+
+.career-seasons article {
+  border: 1px solid var(--line);
+  margin-top: 12px;
+  padding: 12px;
+}
+
+.career-seasons article > h4 {
+  color: var(--team);
+  margin: 0 0 10px;
+}
+
+.career-seasons article > div + div {
+  border-top: 1px dashed var(--line);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+.career-seasons dl {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(auto-fit, minmax(58px, 1fr));
+  margin: 8px 0 0;
+}
+
+.career-seasons dl div { text-align: center; }
+.career-seasons dt { color: var(--muted); font-size: .72rem; }
+.career-seasons dd { font-weight: 700; margin: 2px 0 0; }
+
+.computed-records {
+  border-top: 4px double var(--ink);
+  margin-top: 24px;
+  padding-top: 20px;
+}
+
+.computed-record-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.computed-record-grid article {
+  background: color-mix(in srgb, var(--team) 8%, var(--paper));
+  border: 1px solid var(--line);
+  box-shadow: 3px 3px 0 var(--shadow);
+  padding: 12px;
+}
+
+.computed-record-grid article > span { color: var(--muted); font-size: .75rem; }
+.computed-record-grid article > strong { display: block; font-size: 1.6rem; margin: 8px 0 4px; }
+.computed-record-grid h4, .computed-record-grid p { margin: 2px 0; }
+
 .profile-stripe {
   padding: 8px 11px;
   background: var(--team);

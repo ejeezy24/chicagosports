@@ -368,6 +368,16 @@ const NBA_POSITION_GROUP = {
   C: 'Centers',
 }
 
+/** Normalize any completed-season player payload using that league's archive adapter. */
+export function archivedPlayerStats(team, payload) {
+  if (!payload) return []
+  if (team.sport === 'baseball') return mlbPlayerStats(payload, team.mlbId)
+  if (team.sport === 'hockey') return nhlPlayerStats(payload)
+  if (team.sport === 'football') return nflPlayerStats(payload, team.abbr)
+  if (team.sport === 'basketball') return nbaPlayerStats(payload)
+  return []
+}
+
 const nbaPositionGroup = (position) => {
   const value = String(position ?? '').toUpperCase()
   const primary = ['G', 'F', 'C'].find((code) => value.includes(code))

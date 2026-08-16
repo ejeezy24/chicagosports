@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { seasonLabel } from '../seasons.js'
 
 const normalizeName = (value) =>
@@ -36,7 +37,8 @@ const initials = (name) =>
     .join('')
     .toUpperCase() || 'CS'
 
-export function PlayerProfile({ team, season, player, bio, groups, onClose }) {
+export function PlayerProfile({ team, season, player, bio, groups, career = [], onClose }) {
+  const [showCareer, setShowCareer] = useState(false)
   const lines = playerStatLines(groups, player)
   const details = [
     bio?.positionName ?? bio?.position ?? player.position,
@@ -84,6 +86,38 @@ export function PlayerProfile({ team, season, player, bio, groups, onClose }) {
       ) : (
         <p className="profile-empty">This verified roster entry has no individual stat line in the season feed.</p>
       )}
+
+      <section className="career-file" aria-label={`${player.name} verified Chicago career file`}>
+        <button
+          className="career-toggle"
+          aria-expanded={showCareer}
+          onClick={() => setShowCareer((value) => !value)}
+        >
+          {showCareer ? 'Hide career file' : 'Open career file'} · {career.length} verified {career.length === 1 ? 'season' : 'seasons'}
+        </button>
+        {showCareer ? (
+          career.length ? (
+            <div className="career-seasons">
+              <p>Coverage reflects saved, verified season files—not a claim of complete franchise service.</p>
+              {career.map((entry) => (
+                <article key={entry.season}>
+                  <h4>{entry.label}</h4>
+                  {entry.lines.map((line) => (
+                    <div key={line.name}>
+                      <strong>{line.name}</strong>
+                      <dl>
+                        {line.columns.map((column, index) => (
+                          <div key={`${column}-${index}`}><dt>{column}</dt><dd>{line.values[index]}</dd></div>
+                        ))}
+                      </dl>
+                    </div>
+                  ))}
+                </article>
+              ))}
+            </div>
+          ) : <p className="profile-empty">No saved career seasons are available for this player yet.</p>
+        ) : null}
+      </section>
     </article>
   )
 }

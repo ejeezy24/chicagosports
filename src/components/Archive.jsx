@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { getPlayerStats, getSchedule, usesArchiveData } from '../api.js'
+import { loadTeamArchiveSnapshots } from '../archiveSnapshots.js'
 import { ARCHIVE, RIVALRIES, allArchiveEntries, cityChampionships, closestAnniversary } from '../archiveData.js'
+import { seasonFileRecords } from '../careers.js'
 import { recordFromGames, scheduleEvents } from '../espn.js'
 import {
   espnPlayerStats,
@@ -321,6 +323,7 @@ function HistoryView({ team, toggleFavorite, favorites }) {
 
 function RecordsView({ team, toggleFavorite, favorites }) {
   const [scope, setScope] = useState('team')
+  const computed = useAsync(() => loadTeamArchiveSnapshots(team), [team.key])
   const entries = scope === 'team'
     ? [[team.key, ARCHIVE[team.key]]]
     : [[team.key, ARCHIVE[team.key]], ...Object.entries(ARCHIVE).filter(([key]) => key !== team.key)]
@@ -345,6 +348,29 @@ function RecordsView({ team, toggleFavorite, favorites }) {
         })
       })}
       </div>
+      {scope === 'team' ? (
+        <section className="computed-records">
+          <div className="title-case-head">
+            <div><span className="archive-kicker">Calculated from saved data</span><h3>Verified season-file records</h3></div>
+          </div>
+          <Async state={computed} what="verified season-file records" rows={3} isEmpty={(snapshots) => snapshots.length === 0} empty="No imported season files are available for this club yet.">
+            {(snapshots) => {
+              const records = seasonFileRecords(team, snapshots)
+              return <>
+                <p className="archive-help">Computed from {snapshots.length} verified {snapshots.length === 1 ? 'season file' : 'season files'}. These records expand automatically as more seasons are imported.</p>
+                <div className="computed-record-grid">
+                  {records.map((record) => <article key={record.id}>
+                    <span>{record.group} · {record.metric}</span>
+                    <strong>{record.value}</strong>
+                    <h4>{record.player}</h4>
+                    <p>{record.label}</p>
+                  </article>)}
+                </div>
+              </>
+            }}
+          </Async>
+        </section>
+      ) : null}
     </div>
   )
 }

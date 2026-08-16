@@ -45,7 +45,8 @@ import { DEFAULT_TEAM, resolveState, toSearch } from '../src/urlState.js'
 import { ownDivisionFirst } from '../src/espn.js'
 import { coverageNote } from '../src/coverage.js'
 import { ARCHIVE, RIVALRIES, allArchiveEntries, cityChampionships } from '../src/archiveData.js'
-import { archiveFirst, archiveSnapshotUrl, loadArchiveSnapshot, validateArchiveSnapshot } from '../src/archiveSnapshots.js'
+import { archiveFirst, archiveSnapshotUrl, loadArchiveSnapshot, loadTeamArchiveSnapshots, validateArchiveSnapshot } from '../src/archiveSnapshots.js'
+import { playerCareer, seasonFileRecords } from '../src/careers.js'
 
 const cubs = teamByKey('cubs')
 const bulls = teamByKey('bulls')
@@ -1226,6 +1227,39 @@ test('checked-in archive files and their coverage index agree', async () => {
     const snapshot = JSON.parse(await readFile(join(dir, entry.team, `${entry.season}.json`), 'utf8'))
     assert.equal(validateArchiveSnapshot(snapshot, teamByKey(entry.team), entry.season), true)
   }
+})
+
+test('career files and computed records use only verified imported seasons', async () => {
+  const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'data', 'archive')
+  const snapshots = await Promise.all([1996, 2026].map(async (season) =>
+    JSON.parse(await readFile(join(dir, 'bulls', `${season}.json`), 'utf8'))))
+  const jordan = playerCareer(bulls, snapshots, { name: 'Michael Jordan' })
+  const records = seasonFileRecords(bulls, snapshots)
+
+  assert.deepEqual(jordan.map((entry) => entry.label), ['1995-96'])
+  assert.ok(jordan[0].lines.some((line) => line.columns.includes('PTS')))
+  assert.ok(records.some((record) => record.group === 'Regular-season per game' && record.metric === 'PTS' && record.player === 'Michael Jordan'))
+  assert.ok(records.some((record) => record.group === 'Regular-season totals' && record.metric === 'PTS' && record.player === 'Matas Buzelis'))
+})
+
+test('team archive loading follows the coverage index and ignores other clubs', async () => {
+  const snapshot = {
+    schemaVersion: 1, team: 'bulls', season: 1996,
+    coverage: { roster: 'complete', players: 'complete' },
+    sources: { roster: 'fixture', players: 'fixture' },
+    roster: { roster: [] }, players: { players: [] },
+  }
+  const fetcher = async (url) => {
+    if (url === '/data/archive/index.json') return {
+      ok: true, status: 200, json: async () => ({ schemaVersion: 1, seasons: [
+        { team: 'bulls', season: 1996, coverage: { players: 'complete' } },
+        { team: 'cubs', season: 2016, coverage: { players: 'complete' } },
+      ] }),
+    }
+    return { ok: true, status: 200, json: async () => snapshot }
+  }
+  const loaded = await loadTeamArchiveSnapshots(bulls, fetcher)
+  assert.deepEqual(loaded.map((entry) => entry.season), [1996])
 })
 
 test('Sports Reference is linked for cross-checking, not used as a data feed', () => {

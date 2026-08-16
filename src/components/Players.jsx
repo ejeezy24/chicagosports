@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { getPlayerStats, getRoster, usesArchiveData } from '../api.js'
+import { loadTeamArchiveSnapshots } from '../archiveSnapshots.js'
+import { playerCareer } from '../careers.js'
 import { rosterGroups } from '../espn.js'
 import {
   espnPlayerStats,
@@ -27,12 +29,17 @@ import { findPlayerBio, PlayerProfile, samePlayer } from './PlayerProfile.jsx'
 export function Players({ team, season, focusName }) {
   const [selected, setSelected] = useState(() => focusName ? { name: focusName } : null)
   const state = useAsync(async () => {
-    const [stats, roster] = await Promise.allSettled([
+    const [stats, roster, archive] = await Promise.allSettled([
       getPlayerStats(team, season),
       getRoster(team, season),
+      loadTeamArchiveSnapshots(team),
     ])
     if (stats.status === 'rejected') throw stats.reason
-    return { stats: stats.value, roster: roster.status === 'fulfilled' ? roster.value : null }
+    return {
+      stats: stats.value,
+      roster: roster.status === 'fulfilled' ? roster.value : null,
+      archive: archive.status === 'fulfilled' ? archive.value : [],
+    }
   }, [team.key, season])
 
   const past = usesArchiveData(team, season)
@@ -105,6 +112,7 @@ export function Players({ team, season, focusName }) {
                   player={resolved}
                   bio={findPlayerBio(roster, resolved)}
                   groups={groups}
+                  career={playerCareer(team, data.archive, resolved)}
                   onClose={() => setSelected(null)}
                 />
               ) : null}

@@ -1,6 +1,7 @@
 const SCHEMA_VERSION = 1
 
 const cache = new Map()
+let indexPending = null
 
 export const archiveSnapshotUrl = (team, season) =>
   `/data/archive/${team.key}/${Number(season)}.json`
@@ -50,6 +51,30 @@ export async function archiveFirst(team, season, kind, fallback, fetcher = fetch
     // A saved copy is an optimization, not a single point of failure.
   }
   return fallback()
+}
+
+export async function loadArchiveIndex(fetcher = fetch) {
+  if (fetcher === fetch && indexPending) return indexPending
+  const pending = (async () => {
+    const response = await fetcher('/data/archive/index.json', { headers: { Accept: 'application/json' } })
+    if (!response.ok) throw new Error(`Archive index responded ${response.status}`)
+    const payload = await response.json()
+    return payload?.schemaVersion === SCHEMA_VERSION && Array.isArray(payload.seasons)
+      ? payload.seasons
+      : []
+  })()
+  if (fetcher === fetch) {
+    indexPending = pending
+    pending.catch(() => { indexPending = null })
+  }
+  return pending
+}
+
+export async function loadTeamArchiveSnapshots(team, fetcher = fetch) {
+  const index = await loadArchiveIndex(fetcher)
+  const entries = index.filter((entry) => entry.team === team.key && entry.coverage?.players === 'complete')
+  const snapshots = await Promise.all(entries.map((entry) => loadArchiveSnapshot(team, entry.season, fetcher)))
+  return snapshots.filter(Boolean).sort((a, b) => b.season - a.season)
 }
 
 export { SCHEMA_VERSION }
