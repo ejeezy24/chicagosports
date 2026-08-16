@@ -3,6 +3,7 @@ import test from 'node:test'
 import { cityScoreboardRows, mergeScoreboardRows, scoreboardDateKey, scoreboardCache } from '../src/today.js'
 import { calendarEvent, groupedMonths, initialOpenMonths } from '../src/scheduleTools.js'
 import { canonicalState } from '../src/meta.js'
+import { upstreamUrl } from '../api/upstream.js'
 
 const teams = [
   { key: 'cubs', short: 'Cubs', name: 'Chicago Cubs', espnId: '16', sport: 'baseball', league: 'mlb' },
@@ -93,4 +94,14 @@ test('archive metadata includes the selected shareable view', () => {
   assert.equal(meta.url, 'https://chicagosports.vercel.app/?team=cubs&season=2016&tab=archive&view=history')
   assert.match(meta.title, /Timeline/)
   assert.match(meta.description, /Chicago Cubs/i)
+})
+
+test('production upstream proxy is allowlisted and preserves safe queries', () => {
+  assert.equal(
+    upstreamUrl('site', 'apis/site/v2/sports/baseball/mlb/scoreboard', new URLSearchParams({ dates: '20260816' })),
+    'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard?dates=20260816',
+  )
+  assert.equal(upstreamUrl('evil', 'anything', new URLSearchParams()), null)
+  assert.equal(upstreamUrl('site', 'https://evil.example/x', new URLSearchParams()), null)
+  assert.equal(upstreamUrl('site', '../secrets', new URLSearchParams()), null)
 })
