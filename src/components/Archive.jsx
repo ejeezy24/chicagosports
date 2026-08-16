@@ -35,8 +35,7 @@ const favoriteStore = {
   },
 }
 
-export function Archive({ team, season, seasons }) {
-  const [view, setView] = useState('story')
+export function Archive({ team, season, seasons, view = 'story', onViewChange = () => {} }) {
   const [favorites, setFavorites] = useState(() => favoriteStore.get())
   const [compareSeason, setCompareSeason] = useState(() => seasons.find((value) => value < season) ?? seasons[1] ?? season)
 
@@ -80,7 +79,7 @@ export function Archive({ team, season, seasons }) {
       </div>
       <div className="archive-nav" aria-label="Archive sections">
         {VIEWS.map(([id, label]) => (
-          <button key={id} aria-pressed={view === id} onClick={() => setView(id)}>{label}</button>
+          <button key={id} aria-pressed={view === id} onClick={() => onViewChange(id)}>{label}</button>
         ))}
       </div>
 

@@ -9,6 +9,7 @@ import { DEFAULT_TAB, isTab } from './tabs.js'
 import { clampSeason, currentSeasonFor } from './seasons.js'
 
 export const DEFAULT_TEAM = 'cubs'
+export const ARCHIVE_VIEWS = ['story', 'compare', 'history', 'records', 'rivalries', 'search', 'favorites']
 
 const isTeamKey = (key) => TEAMS.some((t) => t.key === key)
 
@@ -36,6 +37,9 @@ export function parseParams(search) {
 
   const older = params.get('older')
   if (older !== null) out.older = older === '1' || older === 'true' || older === 'yes'
+
+  const view = params.get('view')
+  if (view && ARCHIVE_VIEWS.includes(view)) out.archiveView = view
 
   return out
 }
@@ -65,6 +69,7 @@ export function resolveState(search, storedTeamKey, now = new Date()) {
     teamKey,
     season,
     tab: params.tab ?? DEFAULT_TAB,
+    archiveView: (params.tab ?? DEFAULT_TAB) === 'archive' ? params.archiveView ?? 'story' : 'story',
     includeOlder: (params.older ?? false) || season < team.modernFrom,
   }
 }
@@ -78,13 +83,14 @@ export function resolveState(search, storedTeamKey, now = new Date()) {
 export function toSearch(state, base = '') {
   const params = new URLSearchParams(base)
 
-  for (const key of ['team', 'season', 'tab', 'older']) params.delete(key)
+  for (const key of ['team', 'season', 'tab', 'older', 'view']) params.delete(key)
   const extras = params.toString()
 
   const mine = new URLSearchParams()
   mine.set('team', state.teamKey)
   mine.set('season', String(state.season))
   mine.set('tab', state.tab)
+  if (state.tab === 'archive' && state.archiveView && state.archiveView !== 'story') mine.set('view', state.archiveView)
   if (state.includeOlder) mine.set('older', '1')
 
   return `?${mine.toString()}${extras ? `&${extras}` : ''}`

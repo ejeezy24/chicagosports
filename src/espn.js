@@ -325,6 +325,40 @@ export function statCategories(payload) {
     .filter((c) => c.stats.length > 0)
 }
 
+const INTERNAL_STAT = /qualified|team games played|player rating|projected|secondary average|patience ratio|runs ratio|batter rating|catcher interference/i
+const FAN_FACING_STAT = {
+  baseball: /games played|wins|losses|runs$|runs batted in|hits$|doubles|triples|home runs|walks$|strikeouts$|stolen bases|batting average|on base percentage|slugging percentage|ops|earned run average|era$|whip|saves$|innings pitched|fielding percentage|errors$/i,
+  basketball: /games played|wins|losses|points|rebounds|assists|steals|blocks|turnovers|field goal|three point|free throw|differential/i,
+  hockey: /games played|wins|losses|points|goals|assists|shots|power play|penalty kill|save percentage|goals against|differential/i,
+  football: /games|wins|losses|ties|win percentage|points|differential|yards|touchdowns|turnovers|sacks/i,
+}
+
+/** A short, trustworthy front page for team stats; the full feed remains available as Advanced. */
+export function curatedStatCategories(payload, sport) {
+  const useful = FAN_FACING_STAT[sport] ?? /games|wins|losses|points|runs|goals/i
+  const raw = statCategories(payload)
+  const preferred = raw
+    .map((category) => ({
+      ...category,
+      stats: category.stats
+        .filter((stat) => !INTERNAL_STAT.test(`${stat.key} ${stat.label}`) && useful.test(stat.label))
+        .slice(0, 14),
+    }))
+    .filter((category) => category.stats.length > 0)
+    .slice(0, 4)
+
+  if (preferred.length) return preferred
+  return raw
+    .map((category) => ({
+      ...category,
+      stats: category.stats
+        .filter((stat) => !INTERNAL_STAT.test(`${stat.key} ${stat.label}`))
+        .slice(0, 8),
+    }))
+    .filter((category) => category.stats.length > 0)
+    .slice(0, 2)
+}
+
 /** Belt and braces: ESPN could repeat a machine name too, and React can't. */
 function uniqueKeys(stats) {
   const seen = new Map()

@@ -16,6 +16,7 @@ import { Standings } from './components/Standings.jsx'
 import { TeamPicker, summarizeTeam } from './components/TeamPicker.jsx'
 import { Venue } from './components/Venue.jsx'
 import { Archive } from './components/Archive.jsx'
+import { TodayBoard } from './components/TodayBoard.jsx'
 
 const store = {
   get(key, fallback) {
@@ -48,6 +49,7 @@ export default function App() {
 
   const [season, setSeason] = useState(initial.season)
   const [tab, setTab] = useState(initial.tab)
+  const [archiveView, setArchiveView] = useState(initial.archiveView)
   const [includeOlder, setIncludeOlder] = useState(initial.includeOlder)
   const [playerFocus, setPlayerFocus] = useState(null)
 
@@ -94,10 +96,11 @@ export default function App() {
     setTeamKey(next.teamKey)
     setSeason(next.season)
     setTab(next.tab)
+    setArchiveView(next.archiveView)
     setIncludeOlder(next.includeOlder)
   }, [])
 
-  useUrlSync({ teamKey, season, tab, includeOlder }, restore, store.get('cs.team', DEFAULT_TEAM))
+  useUrlSync({ teamKey, season, tab, archiveView, includeOlder }, restore, store.get('cs.team', DEFAULT_TEAM))
 
   // Carry the chosen year across teams where it exists; clamp where it doesn't.
   useEffect(() => {
@@ -166,6 +169,7 @@ export default function App() {
 
   return (
     <div className="app" style={{ '--team': accent }}>
+      <a className="skip-link" href="#main-content">Skip to content</a>
       <header className="masthead">
         <div className="brand">
           <div className="brand-mark" aria-hidden="true">CS</div>
@@ -178,6 +182,8 @@ export default function App() {
         </div>
         <p>Scores, schedules, rosters, and history for the city&apos;s five major clubs.</p>
       </header>
+
+      <TodayBoard overview={overviewState.data} onSelect={setTeamKey} />
 
       <TeamPicker
         selected={team.key}
@@ -260,11 +266,11 @@ export default function App() {
         ))}
       </div>
 
-      <main>
+      <main id="main-content">
         <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} tabIndex={-1}>
         {/* Keyed so switching team or season remounts panels with clean state. */}
         {tab === 'archive' && (
-          <Archive key={`arc-${team.key}-${season}`} team={team} season={season} seasons={seasons} />
+          <Archive key={`arc-${team.key}-${season}`} team={team} season={season} seasons={seasons} view={archiveView} onViewChange={setArchiveView} />
         )}
         {tab === 'schedule' && (
           <Schedule key={`sch-${team.key}-${season}`} team={team} season={season} />
@@ -288,6 +294,10 @@ export default function App() {
         Data from ESPN, NBA, MLB, the NHL, and nflverse · coverage varies by era · times shown in Chicago time
         <br />
         Unofficial and unaffiliated with ESPN or any club.
+        <details className="methodology">
+          <summary>About the data</summary>
+          <p>Live league feeds power current schedules and statistics. Historical coverage varies by team and season; archive stories and franchise records link to their official sources. Favorites stay in this browser and are not uploaded.</p>
+        </details>
       </footer>
     </div>
   )

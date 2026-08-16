@@ -19,6 +19,7 @@ import {
   withLiveScores,
   footballStatsFromGames,
   historicalVenueName,
+  curatedStatCategories,
 } from '../src/espn.js'
 import { currentSeasonFor, seasonIsComplete, seasonLabel, seasonOptions, clampSeason } from '../src/seasons.js'
 import { BACKDROP, TEAMS, accentFor, teamByKey } from '../src/teams.js'
@@ -41,15 +42,29 @@ import {
 import { archivedNbaSeason } from '../api/nba-history-archive.js'
 import { nbaSeasonKey, resultRows } from '../api/nba-history.js'
 import { sportsReference } from '../src/references.js'
-import { DEFAULT_TEAM, resolveState, toSearch } from '../src/urlState.js'
+import { DEFAULT_TEAM, ARCHIVE_VIEWS, resolveState, toSearch } from '../src/urlState.js'
 import { ownDivisionFirst } from '../src/espn.js'
 import { coverageNote } from '../src/coverage.js'
 import { ARCHIVE, RIVALRIES, allArchiveEntries, cityChampionships } from '../src/archiveData.js'
 import { archiveFirst, archiveSnapshotUrl, loadArchiveSnapshot, loadTeamArchiveSnapshots, validateArchiveSnapshot } from '../src/archiveSnapshots.js'
 import { playerCareer, seasonFileRecords } from '../src/careers.js'
+import { todayRows } from '../src/today.js'
 
 const cubs = teamByKey('cubs')
 const bulls = teamByKey('bulls')
+
+test('the citywide today board prioritizes live games then scheduled clubs', () => {
+  const teams = [{ key: 'cubs', short: 'Cubs' }, { key: 'bears', short: 'Bears' }, { key: 'bulls', short: 'Bulls' }]
+  const rows = todayRows({
+    cubs: { next: 'vs STL · Sat, Aug 15 1:20 PM', live: false },
+    bears: { next: 'LIVE vs CLE · Q3', live: true },
+    bulls: { next: null, live: false },
+  }, teams)
+
+  assert.deepEqual(rows.map((row) => row.teamKey), ['bears', 'cubs'])
+  assert.equal(rows[0].status, 'LIVE')
+  assert.equal(rows[1].status, 'NEXT')
+})
 
 test('archive coverage calls out unavailable and partial historical data', () => {
   const now = new Date('2026-08-02T12:00:00Z')
@@ -378,6 +393,32 @@ test('stats are also found under splits', () => {
 
   assert.equal(cats[0].name, 'defensive')
   assert.equal(cats[0].stats[0].value, 41)
+})
+
+test('team statistics prioritize fan-facing metrics and hide provider internals', () => {
+  const categories = curatedStatCategories({
+    results: { stats: { categories: [{
+      displayName: 'Batting',
+      stats: [
+        { name: 'runs', displayName: 'Runs', displayValue: '637', rankDisplayValue: '2nd' },
+        { name: 'teamGamesPlayed', displayName: 'Team Games Played', displayValue: '124', rankDisplayValue: 'Tied-4th' },
+        { name: 'homeRuns', displayName: 'Home Runs', displayValue: '156', rankDisplayValue: '8th' },
+        { name: 'onBasePct', displayName: 'On Base Percentage', displayValue: '.338', rankDisplayValue: '1st' },
+        { name: 'isQualified', displayName: 'Is Qualified', displayValue: '1', rankDisplayValue: '1st' },
+        { name: 'projectedHomeRuns', displayName: 'Projected Home Runs', displayValue: '205', rankDisplayValue: 'Tied-324th' },
+        { name: 'playerRating', displayName: 'Player Rating', displayValue: '0.0', rankDisplayValue: 'Tied-1st' },
+      ],
+    }] } },
+  }, 'baseball')
+
+  assert.deepEqual(categories[0].stats.map((stat) => stat.key), ['runs', 'homeRuns', 'onBasePct'])
+  assert.equal(categories[0].stats[0].rank, '2nd')
+
+  const fallback = curatedStatCategories({ categories: [{ name: 'General', stats: [
+    { name: 'possession', displayName: 'Possession', displayValue: '52%' },
+    { name: 'isQualified', displayName: 'Is Qualified', displayValue: '1' },
+  ] }] }, 'unknown')
+  assert.deepEqual(fallback[0].stats.map((stat) => stat.key), ['possession'])
 })
 
 test('stats repeating a display name still get distinct keys', () => {
@@ -1344,6 +1385,15 @@ test('the query string round-trips and keeps params it does not own', () => {
   const kept = toSearch(state, '?utm_source=x&team=stale')
   assert.ok(kept.includes('utm_source=x'), 'unknown params should be preserved')
   assert.equal((kept.match(/team=/g) ?? []).length, 1, 'and ours should not be duplicated')
+})
+
+test('archive views are validated and round-trip through shareable URLs', () => {
+  assert.deepEqual(ARCHIVE_VIEWS, ['story', 'compare', 'history', 'records', 'rivalries', 'search', 'favorites'])
+  const state = resolveState('?team=cubs&season=2016&tab=archive&view=history', null, NOW)
+  assert.equal(state.archiveView, 'history')
+  assert.equal(toSearch(state), '?team=cubs&season=2016&tab=archive&view=history')
+  assert.equal(resolveState('?tab=archive&view=unknown', null, NOW).archiveView, 'story')
+  assert.equal(resolveState('?tab=roster&view=history', null, NOW).archiveView, 'story')
 })
 
 test('standings flatten out of the conference/division tree', () => {

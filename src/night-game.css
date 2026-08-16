@@ -860,6 +860,73 @@ tbody tr.me {
   }
 }
 
+.skip-link {
+  position: fixed;
+  z-index: 100;
+  top: 12px;
+  left: 12px;
+  padding: 10px 12px;
+  border: 3px solid var(--line);
+  background: var(--scoreboard-ink);
+  color: var(--line);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  transform: translateY(-180%);
+}
+
+.skip-link:focus { transform: translateY(0); }
+
+.today-board {
+  display: grid;
+  grid-template-columns: minmax(210px, .7fr) minmax(0, 2.3fr);
+  margin-bottom: 18px;
+  border: 3px solid var(--line);
+  background: var(--scoreboard);
+  box-shadow: 5px 5px 0 var(--shadow);
+}
+
+.today-head { padding: 13px 15px; border-right: 3px solid var(--line); background: var(--panel-2); }
+.today-head span { color: var(--team); font-size: 10px; text-transform: uppercase; }
+.today-head h2 { margin: 4px 0 7px; font-family: 'Press Start 2P', monospace; font-size: 11px; line-height: 1.45; text-transform: uppercase; }
+.today-head p { margin: 0; color: var(--muted); font-size: 11px; }
+.today-games { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 3px; padding: 7px; }
+.today-games button { min-height: 70px; padding: 9px; border: 2px solid #6c7180; background: #0a0f1d; color: #fff; text-align: left; }
+.today-games button:hover { border-color: var(--scoreboard-ink); }
+.today-games button > span { display: block; color: #aab0bc; font-size: 9px; }
+.today-games button > span.is-live { color: var(--scoreboard-ink); }
+.today-games strong { display: block; margin: 4px 0; color: color-mix(in srgb, var(--card-color) 65%, #fff); font-size: 13px; }
+.today-games em { display: block; color: #d4d7df; font-size: 10px; font-style: normal; line-height: 1.35; }
+.today-empty { align-self: center; color: #d4d7df; padding: 12px; }
+
+.stats-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 14px; border-bottom: 2px solid var(--line); background: var(--panel-2); }
+.stats-toolbar p { margin: 0; color: var(--muted); font-size: 12px; }
+.stats-toolbar button { min-height: 44px; padding: 8px 10px; border: 2px solid var(--line); background: var(--panel); box-shadow: 2px 2px 0 var(--shadow); font-family: 'Press Start 2P', monospace; font-size: 7px; text-transform: uppercase; }
+.stats-toolbar button[aria-pressed='true'] { background: var(--team); color: #fff; transform: translate(2px, 2px); box-shadow: none; }
+
+.methodology { max-width: 720px; margin: 12px auto 0; }
+.methodology summary { cursor: pointer; color: var(--team); }
+.methodology p { margin: 8px 0 0; }
+
+.table-wrap:focus-visible { outline: 3px solid var(--team); outline-offset: -3px; }
+tbody th[scope='row'] { padding: 8px 9px; text-align: left; border-bottom: 2px solid var(--rule); white-space: nowrap; font-weight: 400; }
+tbody tr.me th[scope='row'] { color: var(--team); font-weight: 700; border-bottom-color: var(--team); }
+
+@media (max-width: 680px) {
+  .today-board { grid-template-columns: 1fr; }
+  .today-head { border-right: 0; border-bottom: 3px solid var(--line); }
+  .today-games { display: flex; overflow-x: auto; scroll-snap-type: inline mandatory; }
+  .today-games button { min-width: 180px; scroll-snap-align: start; }
+  .teams { padding-right: 28px; mask-image: linear-gradient(to right, #000 0 calc(100% - 24px), transparent 100%); }
+  .tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .tabs button { min-height: 46px; padding: 8px 5px; font-size: 7px; }
+  .stats-toolbar { align-items: stretch; flex-direction: column; }
+  .table-wrap table th:first-child,
+  .table-wrap table td:first-child { position: sticky; left: 0; z-index: 2; background: var(--panel); }
+  .table-wrap table thead th:first-child { background: var(--panel-2); z-index: 3; }
+  .table-wrap table tr.me th:first-child { background: color-mix(in srgb, var(--team) 16%, var(--panel)); }
+  .hero-venue .venue-tag { min-height: 44px; padding: 10px 0; }
+}
+
 /* Archive desk: clippings, record cards, comparison board and saved scrapbook. */
 .archive-nav {
   display: grid;

@@ -54,13 +54,14 @@ function StandingsTable({ group, espnTeamId }) {
   return (
     <>
       <div className="group-title">{group.name}</div>
-      <div className="table-wrap">
+      <div className="table-wrap" role="region" aria-label={`${group.name} standings table`} tabIndex={0}>
         <table>
+          <caption className="sr-only">{group.name} standings</caption>
           <thead>
             <tr>
-              <th>Team</th>
+              <th scope="col">Team</th>
               {columns.map((c) => (
-                <th key={c.key}>{c.label}</th>
+                <th scope="col" key={c.key}>{c.label}</th>
               ))}
             </tr>
           </thead>
@@ -70,12 +71,12 @@ function StandingsTable({ group, espnTeamId }) {
                 key={row.id ?? row.team}
                 className={String(row.id) === String(espnTeamId) ? 'me' : undefined}
               >
-                <td>
+                <th scope="row">
                   <div className="tm">
                     {row.logo ? <img src={row.logo} alt="" loading="lazy" /> : null}
                     <span>{row.team}</span>
                   </div>
-                </td>
+                </th>
                 {columns.map((c) => (
                   <td key={c.key}>
                     {row.stats.find((s) => s.key === c.key)?.value ?? '—'}

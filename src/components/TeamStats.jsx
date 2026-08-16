@@ -1,10 +1,12 @@
+import { useState } from 'react'
 import { getSchedule, getTeamStats } from '../api.js'
-import { footballStatsFromGames, scheduleEvents, statCategories } from '../espn.js'
+import { curatedStatCategories, footballStatsFromGames, scheduleEvents, statCategories } from '../espn.js'
 import { seasonLabel } from '../seasons.js'
 import { useAsync } from '../useAsync.js'
 import { Async, Panel } from './ui.jsx'
 
 export function TeamStats({ team, season }) {
+  const [advanced, setAdvanced] = useState(false)
   const state = useAsync(async () => {
     if (team.sport === 'football') {
       const schedule = await getSchedule(team, season, 2)
@@ -26,9 +28,15 @@ export function TeamStats({ team, season }) {
         isEmpty={(d) => statCategories(d).length === 0}
         empty={`No team statistics published for ${seasonLabel(team, season)}.`}
       >
-        {(data) => (
+        {(data) => {
+          const categories = advanced ? statCategories(data) : curatedStatCategories(data, team.sport)
+          return <>
+          <div className="stats-toolbar">
+            <p>{advanced ? 'Complete provider feed. Some fields may be league-specific.' : 'The most useful team totals and league context.'}</p>
+            <button aria-pressed={advanced} onClick={() => setAdvanced((value) => !value)}>{advanced ? 'Key stats' : 'Advanced stats'}</button>
+          </div>
           <div className="stat-groups">
-            {statCategories(data).map((cat) => (
+            {categories.map((cat) => (
               <div className="stat-group" key={cat.name}>
                 <h3>{cat.name}</h3>
                 {cat.stats.map((s) => (
@@ -48,7 +56,8 @@ export function TeamStats({ team, season }) {
               </div>
             ))}
           </div>
-        )}
+          </>
+        }}
       </Async>
     </Panel>
   )
