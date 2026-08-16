@@ -1159,6 +1159,21 @@ test('the 1995-96 Bulls archive survives NBA Stats outages', () => {
   )
 })
 
+test('the completed 2025-26 Bulls season uses the verified NBA.com snapshot', () => {
+  const roster = archivedNbaSeason(2026, 'roster')
+  const stats = archivedNbaSeason(2026, 'stats')
+
+  assert.equal(roster.season, '2025-26')
+  assert.equal(roster.roster.length, 28)
+  assert.equal(stats.perMode, 'Totals')
+  assert.equal(stats.players.length, 28)
+  const buzelis = stats.players.find((player) => player.PLAYER_NAME === 'Matas Buzelis')
+  assert.deepEqual(
+    { GP: buzelis.GP, PTS: buzelis.PTS, REB: buzelis.REB, AST: buzelis.AST },
+    { GP: 77, PTS: 1252, REB: 448, AST: 158 },
+  )
+})
+
 test('Sports Reference is linked for cross-checking, not used as a data feed', () => {
   assert.equal(
     sportsReference(teamByKey('bulls'), 1996).url,
