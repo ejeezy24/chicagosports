@@ -15,6 +15,16 @@ const espnProxy = (target, prefix) => ({
   changeOrigin: true,
   secure: true,
   rewrite: (p) => p.replace(new RegExp(`^${prefix}`), ''),
+  configure(proxyServer) {
+    proxyServer.on('proxyReq', (proxyReq) => {
+      // Browsers attach localhost as Origin/Referer. ESPN treats those forwarded
+      // headers as a forbidden cross-origin request even though Vite is the
+      // caller; strip them so dev behaves like the production rewrite.
+      proxyReq.removeHeader('origin')
+      proxyReq.removeHeader('referer')
+      proxyReq.removeHeader('user-agent')
+    })
+  },
 })
 
 // Longest prefixes first — Vite matches with startsWith, so `/espn` would

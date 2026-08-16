@@ -10,6 +10,7 @@
     "archive:import": "node scripts/archive-import.mjs",
     "archive:validate": "node scripts/archive-validate.mjs",
     "test": "node --test \"test/*.test.mjs\"",
+    "test:browser": "playwright test",
     "lint": "eslint ."
   },
   "dependencies": {
@@ -19,11 +20,12 @@
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@vitejs/plugin-react": "^6.0.5",
-    "vite": "^8.2.0",
     "eslint": "^9.0.0",
     "eslint-plugin-react": "^7.37.0",
     "eslint-plugin-react-hooks": "^7.0.1",
-    "globals": "^17.8.0"
+    "globals": "^17.8.0",
+    "vite": "^8.2.0"
   }
 }

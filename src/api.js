@@ -180,8 +180,8 @@ export function getTeam(team, { fresh } = {}) {
  * place a running score can be read. One request covers every game in the
  * league, which is cheaper than a summary per game.
  */
-export function getScoreboard(team, { fresh } = {}) {
-  return request('site', `${leaguePath(team)}/scoreboard`, undefined, { fresh })
+export function getScoreboard(team, { fresh, date } = {}) {
+  return request('site', `${leaguePath(team)}/scoreboard`, date ? { dates: date } : undefined, { fresh })
 }
 
 /** Every game for one season and season type (1 pre, 2 regular, 3 post). */

@@ -1,10 +1,11 @@
-import { Fragment, memo, useId, useMemo, useState } from 'react'
+import { Fragment, memo, useEffect, useId, useMemo, useState } from 'react'
 import { getSchedule, getScoreboard } from '../api.js'
 import { scheduleEvents, recordFromGames, scoreboardScores, withLiveScores } from '../espn.js'
-import { formatDate, formatTime, isSameDay, monthKey } from '../format.js'
+import { formatDate, formatTime, isSameDay } from '../format.js'
 import { currentSeasonFor, seasonLabel } from '../seasons.js'
 import { useAsync } from '../useAsync.js'
 import { useLivePoll } from '../useLivePoll.js'
+import { downloadCalendar, groupedMonths, initialOpenMonths } from '../scheduleTools.js'
 import { Async, Panel } from './ui.jsx'
 import { Boxscore } from './Boxscore.jsx'
 import { Venue } from './Venue.jsx'
@@ -53,6 +54,17 @@ export function Schedule({ team, season }) {
     () => (newestFirst ? [...withScores].reverse() : withScores),
     [withScores, newestFirst],
   )
+  const monthGroups = useMemo(() => groupedMonths(games), [games])
+  const [openMonths, setOpenMonths] = useState(new Set())
+  useEffect(() => {
+    setOpenMonths(initialOpenMonths(monthGroups, new Date()))
+  }, [monthGroups, newestFirst])
+  const toggleMonth = (label) => setOpenMonths((current) => {
+    const next = new Set(current)
+    if (next.has(label)) next.delete(label)
+    else next.add(label)
+    return next
+  })
 
   const types = team.seasonTypes
   const hasToday = withScores.some((game) => isSameDay(game.date))
@@ -114,7 +126,6 @@ export function Schedule({ team, season }) {
             { for: 0, against: 0 },
           )
 
-          let month = null
           return (
             <>
               {state.data?.source ? (
@@ -141,15 +152,18 @@ export function Schedule({ team, season }) {
                 </div>
               </div>
 
-              {games.map((g) => {
-                const header = monthKey(g.date)
-                const showHeader = header !== month
-                month = header
+              {monthGroups.map((group) => {
+                const open = openMonths.has(group.label)
                 return (
-                  <div key={g.id ?? `${g.date}-${g.opponent.abbr}`}>
-                    {showHeader ? <div className="month">{header}</div> : null}
-                    <GameRow game={g} team={team} />
-                  </div>
+                  <section className="month-group" key={group.label}>
+                    <button className="month month-toggle" aria-expanded={open} onClick={() => toggleMonth(group.label)}>
+                      <span>{group.label}</span>
+                      <span>{group.games.length} games {open ? '−' : '+'}</span>
+                    </button>
+                    {open ? group.games.map((g) => (
+                      <GameRow key={g.id ?? `${g.date}-${g.opponent.abbr}`} game={g} team={team} />
+                    )) : null}
+                  </section>
                 )
               })}
             </>
@@ -171,6 +185,8 @@ const GameRow = memo(function GameRow({ game, team }) {
   const panelId = useId()
   // Nothing to show for a game that hasn't been played yet.
   const canExpand = game.hasBoxscore !== false && (game.completed || game.state === 'in')
+  const scheduled = new Date(game.date)
+  const canCalendar = !game.completed && game.state !== 'in' && Number.isFinite(scheduled.getTime()) && (scheduled.getUTCHours() !== 0 || scheduled.getUTCMinutes() !== 0)
 
   // Kept as parts rather than a joined string so the venue can carry its own
   // hover card; away grounds fall back to plain text inside <Venue>.
@@ -233,7 +249,15 @@ const GameRow = memo(function GameRow({ game, team }) {
             ) : null}
           </>
         ) : (
-          <span className="upcoming">{game.detail ?? formatTime(game.date)}</span>
+          <>
+            <span className="upcoming">{game.detail ?? formatTime(game.date)}</span>
+            {canCalendar ? (
+              <button className="calendar-button" onClick={() => downloadCalendar(game, team)} title="Download calendar event">
+                <span aria-hidden="true">＋</span>
+                <span className="sr-only">Add {team.name} {game.home ? 'vs' : 'at'} {game.opponent.name} to calendar</span>
+              </button>
+            ) : null}
+          </>
         )}
       </div>
 

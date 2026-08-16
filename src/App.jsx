@@ -17,6 +17,7 @@ import { TeamPicker, summarizeTeam } from './components/TeamPicker.jsx'
 import { Venue } from './components/Venue.jsx'
 import { Archive } from './components/Archive.jsx'
 import { TodayBoard } from './components/TodayBoard.jsx'
+import { canonicalState } from './meta.js'
 
 const store = {
   get(key, fallback) {
@@ -154,18 +155,16 @@ export default function App() {
   const teamOverview = overviewState.data?.[team.key]
 
   useEffect(() => {
-    const tabLabel = TABS.find((item) => item.id === tab)?.label ?? 'Chicago sports'
-    const title = `${seasonLabel(team, season)} ${team.name} ${tabLabel} | Chicago Sports`
-    const params = new URLSearchParams({ team: team.key, season: String(season), tab })
-    if (includeOlder) params.set('older', '1')
-    const canonicalUrl = `${window.location.origin}/?${params}`
-
-    document.title = title
-    document.querySelector('link[rel="canonical"]')?.setAttribute('href', canonicalUrl)
-    document.querySelector('meta[property="og:url"]')?.setAttribute('content', canonicalUrl)
-    document.querySelector('meta[property="og:title"]')?.setAttribute('content', title)
-    document.querySelector('meta[name="twitter:title"]')?.setAttribute('content', title)
-  }, [team, season, tab, includeOlder])
+    const meta = canonicalState({ team, season, tab, archiveView, includeOlder }, window.location.origin)
+    document.title = meta.title
+    document.querySelector('link[rel="canonical"]')?.setAttribute('href', meta.url)
+    document.querySelector('meta[property="og:url"]')?.setAttribute('content', meta.url)
+    document.querySelector('meta[property="og:title"]')?.setAttribute('content', meta.title)
+    document.querySelector('meta[property="og:description"]')?.setAttribute('content', meta.description)
+    document.querySelector('meta[name="description"]')?.setAttribute('content', meta.description)
+    document.querySelector('meta[name="twitter:title"]')?.setAttribute('content', meta.title)
+    document.querySelector('meta[name="twitter:description"]')?.setAttribute('content', meta.description)
+  }, [team, season, tab, archiveView, includeOlder])
 
   return (
     <div className="app" style={{ '--team': accent }}>
@@ -183,7 +182,7 @@ export default function App() {
         <p>Scores, schedules, rosters, and history for the city&apos;s five major clubs.</p>
       </header>
 
-      <TodayBoard overview={overviewState.data} onSelect={setTeamKey} />
+      <TodayBoard onSelect={setTeamKey} />
 
       <TeamPicker
         selected={team.key}
