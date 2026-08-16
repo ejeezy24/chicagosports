@@ -150,6 +150,20 @@ export default function App() {
   const archiveCoverage = coverageNote(team, season)
   const teamOverview = overviewState.data?.[team.key]
 
+  useEffect(() => {
+    const tabLabel = TABS.find((item) => item.id === tab)?.label ?? 'Chicago sports'
+    const title = `${seasonLabel(team, season)} ${team.name} ${tabLabel} | Chicago Sports`
+    const params = new URLSearchParams({ team: team.key, season: String(season), tab })
+    if (includeOlder) params.set('older', '1')
+    const canonicalUrl = `${window.location.origin}/?${params}`
+
+    document.title = title
+    document.querySelector('link[rel="canonical"]')?.setAttribute('href', canonicalUrl)
+    document.querySelector('meta[property="og:url"]')?.setAttribute('content', canonicalUrl)
+    document.querySelector('meta[property="og:title"]')?.setAttribute('content', title)
+    document.querySelector('meta[name="twitter:title"]')?.setAttribute('content', title)
+  }, [team, season, tab, includeOlder])
+
   return (
     <div className="app" style={{ '--team': accent }}>
       <header className="masthead">

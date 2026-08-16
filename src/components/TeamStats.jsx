@@ -1,16 +1,23 @@
-import { getTeamStats } from '../api.js'
-import { statCategories } from '../espn.js'
+import { getSchedule, getTeamStats } from '../api.js'
+import { footballStatsFromGames, scheduleEvents, statCategories } from '../espn.js'
 import { seasonLabel } from '../seasons.js'
 import { useAsync } from '../useAsync.js'
 import { Async, Panel } from './ui.jsx'
 
 export function TeamStats({ team, season }) {
-  const state = useAsync(() => getTeamStats(team, season), [team.key, season])
+  const state = useAsync(async () => {
+    if (team.sport === 'football') {
+      const schedule = await getSchedule(team, season, 2)
+      return footballStatsFromGames(scheduleEvents(schedule, team.espnId))
+    }
+    return getTeamStats(team, season)
+  }, [team.key, season])
 
   return (
     <Panel
       title={`${seasonLabel(team, season)} team statistics`}
-      aside="Totals · per game · league rank"
+      aside={team.sport === 'football' ? 'Regular-season record · scoring' : 'Totals · per game · league rank'}
+      note={team.sport === 'football' ? 'Verified record and scoring totals calculated from the regular-season schedule.' : null}
     >
       <Async
         state={state}

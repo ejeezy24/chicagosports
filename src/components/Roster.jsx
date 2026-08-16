@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { getRoster, isHistorical } from '../api.js'
+import { getRoster, isHistorical, usesArchiveData } from '../api.js'
 import { rosterCoach, rosterGroups, rosterSeason } from '../espn.js'
 import { mlbRosterGroups, nbaRosterGroups, nflRosterGroups, nhlRosterGroups } from '../players.js'
 import { sportsReference } from '../references.js'
@@ -31,7 +31,7 @@ export function Roster({ team, season, onOpenPlayer }) {
 
   // Past seasons come from league/archive APIs in different payload shapes;
   // see getRoster. The adapters make all four sports look the same here.
-  const source = isHistorical(team, season) ? LEAGUE_SOURCE[team.sport] : null
+  const source = usesArchiveData(team, season) ? LEAGUE_SOURCE[team.sport] : null
 
   return (
     <Panel

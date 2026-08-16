@@ -17,8 +17,10 @@ import {
   periodLabels,
   scoreboardScores,
   withLiveScores,
+  footballStatsFromGames,
+  historicalVenueName,
 } from '../src/espn.js'
-import { currentSeasonFor, seasonLabel, seasonOptions, clampSeason } from '../src/seasons.js'
+import { currentSeasonFor, seasonIsComplete, seasonLabel, seasonOptions, clampSeason } from '../src/seasons.js'
 import { BACKDROP, TEAMS, accentFor, teamByKey } from '../src/teams.js'
 import { readdir, stat } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
@@ -232,6 +234,41 @@ test('live scores are laid over a schedule that has none', () => {
 test('ties are counted separately', () => {
   const rec = recordFromGames([{ result: 'W' }, { result: 'T' }, { result: 'L' }, { result: 'W' }])
   assert.equal(rec.text, '2-1-1')
+})
+
+test('postponed games do not inflate schedule totals', () => {
+  const game = (id, name) => ({
+    id,
+    date: `2026-04-0${id}T18:00Z`,
+    competitions: [{
+      status: { type: { name, state: 'pre', completed: false, shortDetail: name === 'STATUS_POSTPONED' ? 'Postponed' : '7:05 PM' } },
+      competitors: [
+        { homeAway: 'home', team: { id: '16' } },
+        { homeAway: 'away', team: { id: '20' } },
+      ],
+    }],
+  })
+  assert.deepEqual(scheduleEvents({ events: [game('1', 'STATUS_SCHEDULED'), game('2', 'STATUS_POSTPONED')] }, '16').map((item) => item.id), ['1'])
+})
+
+test('historical arenas use the name fans saw that season', () => {
+  assert.equal(historicalVenueName('Rocket Arena', '1996-01-01T00:00:00Z'), 'Gund Arena')
+  assert.equal(historicalVenueName('Mortgage Matchup Center', '1996-01-01T00:00:00Z'), 'America West Arena')
+  assert.equal(historicalVenueName('Moda Center', '1996-01-01T00:00:00Z'), 'Rose Garden')
+  assert.equal(historicalVenueName('Rocket Arena', '2026-01-01T00:00:00Z'), 'Rocket Arena')
+})
+
+test('football team totals can be derived from the verified schedule', () => {
+  const payload = footballStatsFromGames([
+    { completed: true, result: 'W', ourScore: 46, theirScore: 10 },
+    { completed: true, result: 'L', ourScore: 24, theirScore: 38 },
+    { completed: false, result: null, ourScore: null, theirScore: null },
+  ])
+  const categories = statCategories(payload)
+  assert.equal(categories[0].stats.find((item) => item.key === 'gamesScheduled').value, '3')
+  assert.equal(categories[0].stats.find((item) => item.key === 'gamesPlayed').value, '2')
+  assert.equal(categories[1].stats.find((item) => item.key === 'pointsFor').value, '70')
+  assert.equal(categories[1].stats.find((item) => item.key === 'pointDifferential').value, '22')
 })
 
 test('verified historical NFL schedules pass through without ESPN renormalization', () => {
@@ -1287,6 +1324,15 @@ test('current season respects each league calendar', () => {
 
   const october = new Date('2026-10-15T12:00:00Z')
   assert.equal(currentSeasonFor(teamByKey('bulls'), october), 2027) // 2026-27 under way
+})
+
+test('completed split seasons use archive data during the summer offseason', () => {
+  const august = new Date('2026-08-15T12:00:00Z')
+  const january = new Date('2026-01-15T12:00:00Z')
+  assert.equal(seasonIsComplete(teamByKey('bulls'), 2026, august), true)
+  assert.equal(seasonIsComplete(teamByKey('blackhawks'), 2026, august), true)
+  assert.equal(seasonIsComplete(teamByKey('bulls'), 2026, january), false)
+  assert.equal(seasonIsComplete(teamByKey('bears'), 2026, august), false)
 })
 
 test('season lists are newest-first and honour the older-seasons toggle', () => {

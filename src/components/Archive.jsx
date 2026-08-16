@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { getPlayerStats, getSchedule, isHistorical } from '../api.js'
+import { getPlayerStats, getSchedule, usesArchiveData } from '../api.js'
 import { ARCHIVE, RIVALRIES, allArchiveEntries, cityChampionships, closestAnniversary } from '../archiveData.js'
 import { recordFromGames, scheduleEvents } from '../espn.js'
 import {
@@ -99,7 +99,7 @@ export function Archive({ team, season, seasons }) {
         />
       ) : null}
       {view === 'history' ? <HistoryView team={team} toggleFavorite={toggleFavorite} favorites={favorites} /> : null}
-      {view === 'records' ? <RecordsView toggleFavorite={toggleFavorite} favorites={favorites} /> : null}
+      {view === 'records' ? <RecordsView team={team} toggleFavorite={toggleFavorite} favorites={favorites} /> : null}
       {view === 'rivalries' ? <RivalriesView team={team} toggleFavorite={toggleFavorite} favorites={favorites} /> : null}
       {view === 'search' ? <SearchView team={team} season={season} data={state.data} toggleFavorite={toggleFavorite} favorites={favorites} /> : null}
       {view === 'favorites' ? <FavoritesView favorites={favorites} toggleFavorite={toggleFavorite} /> : null}
@@ -319,10 +319,19 @@ function HistoryView({ team, toggleFavorite, favorites }) {
   )
 }
 
-function RecordsView({ toggleFavorite, favorites }) {
+function RecordsView({ team, toggleFavorite, favorites }) {
+  const [scope, setScope] = useState('team')
+  const entries = scope === 'team'
+    ? [[team.key, ARCHIVE[team.key]]]
+    : [[team.key, ARCHIVE[team.key]], ...Object.entries(ARCHIVE).filter(([key]) => key !== team.key)]
   return (
-    <div className="archive-body record-grid">
-      {Object.entries(ARCHIVE).flatMap(([key, data]) => {
+    <div className="archive-body">
+      <div className="title-case-head records-heading">
+        <div><span className="archive-kicker">Franchise record book</span><h3>{scope === 'team' ? `${team.short} leaders` : `${team.short} first, then all Chicago`}</h3></div>
+        <div className="compare-mode"><button aria-pressed={scope === 'team'} onClick={() => setScope('team')}>{team.short}</button><button aria-pressed={scope === 'city'} onClick={() => setScope('city')}>All Chicago</button></div>
+      </div>
+      <div className="record-grid">
+      {entries.flatMap(([key, data]) => {
         const team = teamByKey(key)
         return (data.leaders ?? [data.record]).map((leader) => {
           const entry = { teamKey: key, type: 'Leader', title: leader.holder, detail: `${leader.value} ${leader.label.toLowerCase()}` }
@@ -335,6 +344,7 @@ function RecordsView({ toggleFavorite, favorites }) {
           </article>
         })
       })}
+      </div>
     </div>
   )
 }
@@ -427,7 +437,7 @@ function CompareRow({ label, a, b, lower = false }) {
 
 function normalizePlayerGroups(team, season, payload) {
   if (!payload) return []
-  const past = isHistorical(team, season)
+  const past = usesArchiveData(team, season)
   if (team.sport === 'baseball') return mlbPlayerStats(payload, team.mlbId)
   if (team.sport === 'hockey' && past) return nhlPlayerStats(payload)
   if (team.sport === 'football' && past) return nflPlayerStats(payload, team.abbr)
@@ -457,7 +467,10 @@ function pct(record) { return record.played ? (record.w / record.played).toFixed
 function seasonSummary(team, season, record, postseason, streak) {
   if (!record.played) return 'This season is waiting for its first completed chapter.'
   const title = ARCHIVE[team.key].championships.includes(Number(season))
-  return `${record.w} wins and ${record.l} losses${record.t ? ` with ${record.t} ties` : ''}. ${streak ? `The longest winning run reached ${streak} games. ` : ''}${title ? 'It ended with a championship banner.' : postseason.played ? `The postseason record was ${postseason.text}.` : 'No postseason games are listed.'}`
+  const wins = `${record.w} ${record.w === 1 ? 'win' : 'wins'}`
+  const losses = `${record.l} ${record.l === 1 ? 'loss' : 'losses'}`
+  const ties = record.t ? ` with ${record.t} ${record.t === 1 ? 'tie' : 'ties'}` : ''
+  return `${wins} and ${losses}${ties}. ${streak ? `The longest winning run reached ${streak} games. ` : ''}${title ? 'It ended with a championship banner.' : postseason.played ? `The postseason record was ${postseason.text}.` : 'No postseason games are listed.'}`
 }
 
 function firstStat(player) {

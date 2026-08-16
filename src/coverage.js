@@ -11,6 +11,7 @@ const ARCHIVE_SOURCES = {
   },
   football: {
     roster: 'Roster: nflverse archive.',
+    team: 'Team stats: verified schedule totals.',
     players: (season) =>
       Number(season) >= 1999
         ? 'Player stats: nflverse archive.'
@@ -31,6 +32,6 @@ export function coverageNote(team, season, now) {
     typeof source.players === 'function' ? source.players(season) : source.players
   return {
     label: `${seasonLabel(team, season)} archive coverage —`,
-    detail: `Schedules, scores, team stats, and standings are available. ${source.roster} ${players}`,
+    detail: `Schedules, scores, and standings are available. ${source.team ?? 'Team stats: league archive.'} ${source.roster} ${players}`,
   }
 }

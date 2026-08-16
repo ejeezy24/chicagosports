@@ -71,7 +71,14 @@ export function summarizeTeam(payload) {
     // would mean parsing text back out to know.
     live: event?.competitions?.[0]?.status?.type?.state === 'in',
     logo: team.logos?.[0]?.href ?? null,
-    record: record?.summary ? `${record.summary}${team.standingSummary ? ` · ${team.standingSummary}` : ''}` : team.standingSummary ?? null,
+    record: record?.summary
+      ? `${isPreseasonRecord(record, event) ? 'Preseason ' : ''}${record.summary}${team.standingSummary ? ` · ${team.standingSummary}` : ''}`
+      : team.standingSummary ?? null,
     next,
   }
+}
+
+function isPreseasonRecord(record, event) {
+  const label = [record?.type, record?.name, record?.displayName].filter(Boolean).join(' ')
+  return /preseason/i.test(label) || Number(event?.season?.type) === 1
 }

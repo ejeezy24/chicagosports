@@ -62,6 +62,7 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800')
     return res.end(JSON.stringify({ season: Number(season), team, players: rows }))
   } catch (err) {
+    console.error('[api/nfl-roster] upstream failure', { season, team, error: String(err?.message ?? err) })
     res.statusCode = 502
     res.setHeader('Content-Type', 'application/json')
     return res.end(JSON.stringify({ error: String(err?.message ?? err) }))

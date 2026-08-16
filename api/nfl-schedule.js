@@ -90,6 +90,7 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800')
     return res.end(JSON.stringify({ season, team, seasonType, source: 'FiveThirtyEight NFL game archive', sourceUrl: 'https://github.com/fivethirtyeight/nfl-elo-game', games }))
   } catch (error) {
+    console.error('[api/nfl-schedule] upstream failure', { season, team, seasonType, error: String(error?.message ?? error) })
     res.statusCode = 502
     res.setHeader('Content-Type', 'application/json')
     return res.end(JSON.stringify({ error: String(error?.message ?? error) }))

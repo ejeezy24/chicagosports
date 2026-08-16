@@ -3,4 +3,9 @@
   <url>
     <loc>https://chicagosports.vercel.app/</loc>
   </url>
+  <url><loc>https://chicagosports.vercel.app/?team=cubs</loc></url>
+  <url><loc>https://chicagosports.vercel.app/?team=whitesox</loc></url>
+  <url><loc>https://chicagosports.vercel.app/?team=bears</loc></url>
+  <url><loc>https://chicagosports.vercel.app/?team=bulls</loc></url>
+  <url><loc>https://chicagosports.vercel.app/?team=blackhawks</loc></url>
 </urlset>

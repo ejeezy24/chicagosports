@@ -6,7 +6,7 @@
 // fallback served in place of JSON), we retry the same path directly against
 // ESPN, which does send permissive CORS headers.
 
-import { currentSeasonFor } from './seasons.js'
+import { currentSeasonFor, seasonIsComplete } from './seasons.js'
 
 const HOSTS = {
   site: { prefix: '/espn', direct: 'https://site.api.espn.com' },
@@ -209,7 +209,7 @@ export function getRoster(team, season) {
   // ESPN answers 200 with no athletes for any past season, so baseball history
   // comes from MLB instead. The current roster still comes from ESPN, which
   // carries college and headshots that StatsAPI doesn't.
-  if (isHistorical(team, season)) {
+  if (usesArchiveData(team, season)) {
     if (team.sport === 'baseball') {
       return request('mlb', `/api/v1/teams/${team.mlbId}/roster`, {
         rosterType: 'fullSeason',
@@ -235,6 +235,9 @@ export function getRoster(team, season) {
 /** True for any season that has already finished. */
 export const isHistorical = (team, season) =>
   Number(season) !== Number(currentSeasonFor(team))
+
+export const usesArchiveData = (team, season, now = new Date()) =>
+  isHistorical(team, season) || seasonIsComplete(team, season, now)
 
 /**
  * Season team statistics (totals, per-game, league ranks).
@@ -269,28 +272,28 @@ export function getSummary(team, eventId) {
 export function getPlayerStats(team, season) {
   // Hockey's own API is season-scoped; ESPN's isn't, so use it for past years.
   // `2` is the regular season.
-  if (team.sport === 'hockey' && isHistorical(team, season)) {
+  if (team.sport === 'hockey' && usesArchiveData(team, season)) {
     return request('nhl', `/v1/club-stats/${team.abbr}/${nhlSeason(season)}/2`)
   }
 
   if (team.sport === 'baseball') {
     return request('mlb', `/api/v1/teams/${team.mlbId}/roster`, {
       // A finished season wants everyone who appeared, not today's 26.
-      rosterType: isHistorical(team, season) ? 'fullSeason' : 'active',
+      rosterType: usesArchiveData(team, season) ? 'fullSeason' : 'active',
       season,
       // One request instead of one per player.
       hydrate: `person(stats(type=season,season=${season},gameType=R))`,
     })
   }
 
-  if (team.sport === 'football' && isHistorical(team, season)) {
+  if (team.sport === 'football' && usesArchiveData(team, season)) {
     if (Number(season) < 1999) {
       return Promise.resolve({ season: Number(season), team: team.abbr, players: [], availableFrom: 1999 })
     }
     return request('own', '/api/nfl-player-stats', { season, team: team.abbr })
   }
 
-  if (team.sport === 'basketball' && isHistorical(team, season)) {
+  if (team.sport === 'basketball' && usesArchiveData(team, season)) {
     return request('own', '/api/nba-history', { season, mode: 'stats' })
   }
 
@@ -304,5 +307,6 @@ export function getStandings(team, season) {
   return request('site', `/apis/v2/sports/${team.sport}/${team.league}/standings`, {
     season,
     level: 3,
+    seasontype: 2,
   })
 }

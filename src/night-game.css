@@ -584,6 +584,8 @@ select,
   min-height: 66px;
   padding: 10px 14px;
   border-bottom: 2px solid var(--rule);
+  content-visibility: auto;
+  contain-intrinsic-size: 66px;
 }
 
 .game:hover {
@@ -731,12 +733,20 @@ tbody tr.me {
   }
 
   .teams {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
     gap: 8px;
+    padding: 2px 4px 8px 2px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: inline mandatory;
+    scrollbar-width: thin;
   }
 
   .team-card {
-    min-height: 104px;
+    min-width: 146px;
+    min-height: 88px;
+    padding: 13px 10px 9px;
+    scroll-snap-align: start;
   }
 
   .team-card .tc-next {
@@ -835,12 +845,8 @@ tbody tr.me {
 }
 
 @media (max-width: 360px) {
-  .teams {
-    grid-template-columns: 1fr;
-  }
-
   .team-card {
-    min-height: 92px;
+    min-width: 138px;
   }
 }
 

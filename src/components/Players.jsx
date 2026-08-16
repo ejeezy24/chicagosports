@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getPlayerStats, getRoster, isHistorical } from '../api.js'
+import { getPlayerStats, getRoster, usesArchiveData } from '../api.js'
 import { rosterGroups } from '../espn.js'
 import {
   espnPlayerStats,
@@ -35,7 +35,7 @@ export function Players({ team, season, focusName }) {
     return { stats: stats.value, roster: roster.status === 'fulfilled' ? roster.value : null }
   }, [team.key, season])
 
-  const past = isHistorical(team, season)
+  const past = usesArchiveData(team, season)
 
   const groupsFrom = (data) => {
     if (team.sport === 'baseball') return mlbPlayerStats(data, team.mlbId)

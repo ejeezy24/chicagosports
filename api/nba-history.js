@@ -45,29 +45,6 @@ async function nbaRequest(path, params) {
   }
 }
 
-async function seasonTotalsFor(roster, season) {
-  const settled = await Promise.allSettled(
-    roster.map(async (player) => {
-      const payload = await nbaRequest('playercareerstats', {
-        LeagueID: '',
-        PerMode: 'Totals',
-        PlayerID: player.PLAYER_ID,
-      })
-      const total = resultRows(payload, 'SeasonTotalsRegularSeason').find(
-        (row) => row.SEASON_ID === season && String(row.TEAM_ID) === BULLS_ID,
-      )
-      return total ? { ...total, PLAYER_NAME: player.PLAYER } : null
-    }),
-  )
-
-  return {
-    players: settled.flatMap((result) =>
-      result.status === 'fulfilled' && result.value ? [result.value] : [],
-    ),
-    unavailable: settled.filter((result) => result.status === 'rejected').length,
-  }
-}
-
 export default async function handler(req, res) {
   const { searchParams } = new URL(req.url, `http://${req.headers.host ?? 'localhost'}`)
   const endingYear = searchParams.get('season')
@@ -106,24 +83,29 @@ export default async function handler(req, res) {
       return res.end(JSON.stringify({ season, teamId: BULLS_ID, roster, coaches }))
     }
 
-    // The team dashboard begins in 1996-97. Player career totals reach further
-    // back, so use the season's official roster as the index and pick each
-    // player's Bulls row. This also keeps traded players' totals team-specific.
-    const rosterPayload = await nbaRequest('commonteamroster', {
+    // One team-scoped request is faster and more reliable than a separate
+    // career request for every roster member, and it returns the full stat line.
+    const payload = await nbaRequest('leaguedashplayerstats', {
       LeagueID: '00',
+      PerMode: 'PerGame',
       Season: season,
+      SeasonType: 'Regular Season',
       TeamID: BULLS_ID,
+      MeasureType: 'Base',
+      Month: 0,
+      LastNGames: 0,
+      OpponentTeamID: 0,
+      PaceAdjust: 'N',
+      PlusMinus: 'N',
+      Rank: 'N',
     })
-    const roster = resultRows(rosterPayload, 'CommonTeamRoster')
-    const { players, unavailable } = await seasonTotalsFor(roster, season)
-    if (roster.length > 0 && players.length === 0 && unavailable > 0) {
-      throw new Error('NBA Stats player totals were unavailable')
-    }
+    const players = resultRows(payload, 'LeagueDashPlayerStats')
     res.statusCode = 200
     res.setHeader('Content-Type', 'application/json')
     res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800')
-    return res.end(JSON.stringify({ season, teamId: BULLS_ID, players, unavailable }))
+    return res.end(JSON.stringify({ season, teamId: BULLS_ID, players, unavailable: 0, perMode: 'PerGame' }))
   } catch (error) {
+    console.error('[api/nba-history] upstream failure', { endingYear, mode, error: String(error?.message ?? error) })
     const timedOut = error?.name === 'AbortError'
     res.statusCode = timedOut ? 504 : 502
     res.setHeader('Content-Type', 'application/json')

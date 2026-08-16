@@ -46,10 +46,9 @@ export function Standings({ team, season }) {
 
 function StandingsTable({ group, espnTeamId }) {
   const sample = group.rows[0]?.stats ?? []
-  const ordered = [
-    ...PREFERRED.map((key) => sample.find((s) => s.key === key)).filter(Boolean),
-    ...sample.filter((s) => !PREFERRED.includes(s.key)),
-  ]
+  // Do not fill the table with ESPN's opaque derived fields (for example GBP),
+  // which vary by league and have produced duplicate games-behind columns.
+  const ordered = PREFERRED.map((key) => sample.find((s) => s.key === key)).filter(Boolean)
   const columns = ordered.slice(0, 8)
 
   return (

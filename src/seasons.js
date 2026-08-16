@@ -21,6 +21,20 @@ export function currentSeasonFor(team, now = new Date()) {
   }
 }
 
+/**
+ * NBA and NHL seasons are still the newest option during July and August even
+ * though their games are over. Treat that short off-season window as archive
+ * data so a 2025-26 page does not accidentally show a 2026-27 roster.
+ */
+export function seasonIsComplete(team, season, now = new Date()) {
+  const current = currentSeasonFor(team, now)
+  if (Number(season) < Number(current)) return true
+  if (Number(season) > Number(current)) return false
+
+  const month = now.getMonth() + 1
+  return ['nba', 'nhl'].includes(team.league) && month >= 7 && month < 9
+}
+
 export function seasonLabel(team, season) {
   if (team.seasonStyle !== 'split') return String(season)
   return `${season - 1}-${String(season).slice(-2)}`

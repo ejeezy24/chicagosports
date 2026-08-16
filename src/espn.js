@@ -62,9 +62,11 @@ export function normalizeEvent(event, espnTeamId) {
     comp.broadcasts?.flatMap((b) => b.names ?? (b.media?.shortName ? [b.media.shortName] : []))?.[0] ??
     null
 
+  const gameDate = first(event.date, comp.date) ?? null
+
   return {
     id: event.id ?? comp.id,
-    date: first(event.date, comp.date) ?? null,
+    date: gameDate,
     week: event.week?.number ?? null,
     home: us?.homeAway === 'home',
     neutral: Boolean(comp.neutralSite),
@@ -83,7 +85,7 @@ export function normalizeEvent(event, espnTeamId) {
     state,
     completed,
     detail: first(type.shortDetail, type.detail, type.description) ?? null,
-    venue: venue.fullName ?? null,
+    venue: historicalVenueName(venue.fullName, gameDate),
     venueCity: city || null,
     broadcast,
     note: comp.notes?.[0]?.headline ?? event.notes?.[0]?.headline ?? null,
@@ -156,8 +158,78 @@ export function scheduleEvents(payload, espnTeamId) {
   }
   const events = payload?.events ?? []
   return events
+    .filter((event) => !isPostponedOrCanceled(event))
     .map((e) => normalizeEvent(e, espnTeamId))
     .sort((a, b) => new Date(a.date ?? 0) - new Date(b.date ?? 0))
+}
+
+const NON_GAME_STATUS = /postponed|cancel(?:ed|led)|abandoned/i
+
+function isPostponedOrCanceled(event) {
+  const comp = event?.competitions?.[0] ?? {}
+  const type = comp.status?.type ?? event?.status?.type ?? {}
+  const text = [
+    type.name,
+    type.description,
+    type.detail,
+    type.shortDetail,
+    comp.notes?.[0]?.headline,
+    event?.notes?.[0]?.headline,
+  ].filter(Boolean).join(' ')
+  return NON_GAME_STATUS.test(text)
+}
+
+/** ESPN often labels an old building with its current sponsored name. */
+export function historicalVenueName(name, date) {
+  if (!name || !date) return name ?? null
+  const year = new Date(date).getUTCFullYear()
+  const eras = {
+    'Rocket Arena': year <= 2005 ? 'Gund Arena' : year <= 2019 ? 'Quicken Loans Arena' : null,
+    'Mortgage Matchup Center': year <= 2006 ? 'America West Arena' : year <= 2015 ? 'US Airways Center' : null,
+    'Moda Center': year <= 2013 ? 'Rose Garden' : null,
+    'Sleep Train Arena': year <= 2006 ? 'ARCO Arena' : null,
+    'TD Garden': year <= 2005 ? 'FleetCenter' : null,
+    'BMO Harris Bradley Center': year <= 2012 ? 'Bradley Center' : null,
+    'IZOD Center': year <= 1995 ? 'Brendan Byrne Arena' : year <= 2007 ? 'Continental Airlines Arena' : null,
+  }
+  return eras[name] ?? name
+}
+
+/** Reliable NFL team totals when ESPN's team-statistics route returns 404. */
+export function footballStatsFromGames(games) {
+  const completed = games.filter((game) => game.completed && game.result)
+  const record = recordFromGames(completed)
+  const pointsFor = completed.reduce((sum, game) => sum + (Number(game.ourScore) || 0), 0)
+  const pointsAgainst = completed.reduce((sum, game) => sum + (Number(game.theirScore) || 0), 0)
+  const perGame = (value) => record.played ? (value / record.played).toFixed(1) : '—'
+  const stat = (name, displayName, displayValue) => ({ name, displayName, displayValue })
+
+  return {
+    source: 'Schedule-derived NFL totals',
+    categories: [
+      {
+        name: 'Record',
+        stats: [
+          stat('gamesScheduled', 'Games Scheduled', String(games.length)),
+          stat('gamesPlayed', 'Games Played', String(record.played)),
+          stat('wins', 'Wins', String(record.w)),
+          stat('losses', 'Losses', String(record.l)),
+          stat('ties', 'Ties', String(record.t)),
+          stat('winPercent', 'Win Percentage', record.played ? (record.w / record.played).toFixed(3).replace(/^0/, '') : '—'),
+        ],
+      },
+      {
+        name: 'Scoring',
+        stats: [
+          stat('pointsFor', 'Points For', String(pointsFor)),
+          stat('pointsAgainst', 'Points Against', String(pointsAgainst)),
+          stat('pointDifferential', 'Point Differential', String(pointsFor - pointsAgainst)),
+          stat('pointsPerGame', 'Points Per Game', perGame(pointsFor)),
+          stat('allowedPerGame', 'Points Allowed Per Game', perGame(pointsAgainst)),
+        ],
+      },
+    ],
+  }
 }
 
 /** W-L(-T) across the completed games in a list. */
