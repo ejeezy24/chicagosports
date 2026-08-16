@@ -1,11 +1,11 @@
-import { Fragment, memo, useEffect, useId, useMemo, useState } from 'react'
+import { Fragment, memo, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { getSchedule, getScoreboard } from '../api.js'
 import { scheduleEvents, recordFromGames, scoreboardScores, withLiveScores } from '../espn.js'
 import { formatDate, formatTime, isSameDay } from '../format.js'
 import { currentSeasonFor, seasonLabel } from '../seasons.js'
 import { useAsync } from '../useAsync.js'
 import { useLivePoll } from '../useLivePoll.js'
-import { downloadCalendar, groupedMonths, initialOpenMonths } from '../scheduleTools.js'
+import { downloadCalendar, groupedMonths, initialOpenMonths, reconcileOpenMonths } from '../scheduleTools.js'
 import { Async, Panel } from './ui.jsx'
 import { Boxscore } from './Boxscore.jsx'
 import { Venue } from './Venue.jsx'
@@ -56,9 +56,14 @@ export function Schedule({ team, season }) {
   )
   const monthGroups = useMemo(() => groupedMonths(games), [games])
   const [openMonths, setOpenMonths] = useState(new Set())
+  const monthStructure = useMemo(() => monthGroups.map((group) => `${group.label}:${group.games.map((game) => game.id ?? game.date).join(',')}`).join('|'), [monthGroups])
+  const previousStructure = useRef(null)
   useEffect(() => {
-    setOpenMonths(initialOpenMonths(monthGroups, new Date()))
-  }, [monthGroups, newestFirst])
+    if (previousStructure.current === monthStructure) return
+    const firstLoad = previousStructure.current === null
+    previousStructure.current = monthStructure
+    setOpenMonths((current) => firstLoad ? initialOpenMonths(monthGroups, new Date()) : reconcileOpenMonths(current, monthGroups))
+  }, [monthGroups, monthStructure])
   const toggleMonth = (label) => setOpenMonths((current) => {
     const next = new Set(current)
     if (next.has(label)) next.delete(label)
@@ -154,15 +159,18 @@ export function Schedule({ team, season }) {
 
               {monthGroups.map((group) => {
                 const open = openMonths.has(group.label)
+                const groupId = `schedule-month-${group.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
                 return (
                   <section className="month-group" key={group.label}>
-                    <button className="month month-toggle" aria-expanded={open} onClick={() => toggleMonth(group.label)}>
+                    <button className="month month-toggle" aria-expanded={open} aria-controls={groupId} onClick={() => toggleMonth(group.label)}>
                       <span>{group.label}</span>
                       <span>{group.games.length} games {open ? '−' : '+'}</span>
                     </button>
-                    {open ? group.games.map((g) => (
-                      <GameRow key={g.id ?? `${g.date}-${g.opponent.abbr}`} game={g} team={team} />
-                    )) : null}
+                    <div id={groupId} hidden={!open}>
+                      {open ? group.games.map((g) => (
+                        <GameRow key={g.id ?? `${g.date}-${g.opponent.abbr}`} game={g} team={team} />
+                      )) : null}
+                    </div>
                   </section>
                 )
               })}
@@ -186,7 +194,7 @@ const GameRow = memo(function GameRow({ game, team }) {
   // Nothing to show for a game that hasn't been played yet.
   const canExpand = game.hasBoxscore !== false && (game.completed || game.state === 'in')
   const scheduled = new Date(game.date)
-  const canCalendar = !game.completed && game.state !== 'in' && Number.isFinite(scheduled.getTime()) && (scheduled.getUTCHours() !== 0 || scheduled.getUTCMinutes() !== 0)
+  const canCalendar = !game.completed && game.state !== 'in' && !game.timeTbd && Number.isFinite(scheduled.getTime())
 
   // Kept as parts rather than a joined string so the venue can carry its own
   // hover card; away grounds fall back to plain text inside <Venue>.

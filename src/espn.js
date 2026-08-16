@@ -63,6 +63,7 @@ export function normalizeEvent(event, espnTeamId) {
     null
 
   const gameDate = first(event.date, comp.date) ?? null
+  const detail = first(type.shortDetail, type.detail, type.description) ?? null
 
   return {
     id: event.id ?? comp.id,
@@ -84,7 +85,8 @@ export function normalizeEvent(event, espnTeamId) {
     result,
     state,
     completed,
-    detail: first(type.shortDetail, type.detail, type.description) ?? null,
+    detail,
+    timeTbd: /\b(?:tbd|tba)\b|time (?:not announced|to be determined)/i.test(`${type.name ?? ''} ${detail ?? ''}`),
     venue: historicalVenueName(venue.fullName, gameDate),
     venueCity: city || null,
     broadcast,

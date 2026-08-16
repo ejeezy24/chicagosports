@@ -38,6 +38,18 @@ test('primary dynamic controls expose accessible state', async ({ page }) => {
   await calendar.click()
   await expect((await downloadEvent).suggestedFilename()).toMatch(/\.ics$/)
   await expect(month).toHaveAttribute('aria-expanded', 'true')
+  await expect(month).toHaveAttribute('aria-controls', /schedule-month-/)
+  await expect(page.locator(`#${await month.getAttribute('aria-controls')}`)).toBeAttached()
   await month.click()
   await expect(month).toHaveAttribute('aria-expanded', 'false')
+})
+
+test('partial city scoreboard failures remain retryable', async ({ page }) => {
+  await page.route('**/espn/apis/site/v2/sports/**/scoreboard?dates=*', (route) => {
+    if (route.request().url().includes('/basketball/nba/')) return route.fulfill({ status: 503, body: '{}' })
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ events: [] }) })
+  })
+  await page.goto('/?team=cubs&season=2026&tab=archive')
+  await expect(page.locator('.today-status')).toHaveText('Some league updates are delayed.', { timeout: 20_000 })
+  await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible()
 })

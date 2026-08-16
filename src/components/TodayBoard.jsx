@@ -3,6 +3,7 @@ import { getScoreboard } from '../api.js'
 import { TEAMS, accentFor } from '../teams.js'
 import { cityScoreboardRows, mergeScoreboardRows, scoreboardCache, scoreboardDateKey } from '../today.js'
 import { useAsync } from '../useAsync.js'
+import { useLivePoll } from '../useLivePoll.js'
 
 const DAYS = [{ offset: -1, label: 'Yesterday' }, { offset: 0, label: 'Today' }, { offset: 1, label: 'Tomorrow' }]
 
@@ -31,6 +32,9 @@ export function TodayBoard({ onSelect }) {
     if (loaded) scoreboardCache.write(globalThis.localStorage, dateKey, rows, state.updatedAt)
   }, [dateKey, loaded, rows, state.updatedAt])
 
+  const fastRefresh = Boolean(loaded?.partial || rows.some((row) => row.live))
+  useLivePoll(state.refresh, offset === 0, fastRefresh ? 30_000 : 5 * 60_000)
+
   const status = state.loading && !rows.length
     ? 'Loading games…'
     : state.error
@@ -46,7 +50,9 @@ export function TodayBoard({ onSelect }) {
           {DAYS.map((day) => <button key={day.offset} aria-pressed={offset === day.offset} onClick={() => setOffset(day.offset)}>{day.label}</button>)}
         </div>
         <div className="today-status" aria-live="polite">{status}</div>
-        {state.error ? <button className="today-retry" onClick={state.retry}>Retry</button> : null}
+        {state.error || loaded?.partial ? (
+          <button className="today-retry" onClick={state.error ? state.retry : state.refresh}>Retry</button>
+        ) : null}
       </div>
       <div className="today-games">
         {rows.length ? rows.map((row) => (

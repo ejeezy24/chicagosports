@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { cityScoreboardRows, mergeScoreboardRows, scoreboardDateKey, scoreboardCache } from '../src/today.js'
-import { calendarEvent, groupedMonths, initialOpenMonths } from '../src/scheduleTools.js'
+import { calendarEvent, groupedMonths, initialOpenMonths, reconcileOpenMonths } from '../src/scheduleTools.js'
 import { canonicalState } from '../src/meta.js'
 import { upstreamUrl } from '../api/upstream.js'
+import { teamByKey } from '../src/teams.js'
+import { normalizeEvent } from '../src/espn.js'
+import { formatTime } from '../src/format.js'
 
 const teams = [
   { key: 'cubs', short: 'Cubs', name: 'Chicago Cubs', espnId: '16', sport: 'baseball', league: 'mlb' },
@@ -74,7 +77,11 @@ test('calendar export creates a valid Chicago game event', () => {
   assert.match(ics, /SUMMARY:Chicago Cubs vs Cardinals/)
   assert.match(ics, /LOCATION:Wrigley Field/)
   assert.match(ics, /END:VCALENDAR/)
-  assert.equal(calendarEvent({ date: '2026-08-16T00:00:00Z', opponent: {} }, teams[0]), null)
+  assert.match(calendarEvent({ date: '2026-08-16T00:00:00Z', home: true, opponent: { name: 'Cardinals' } }, teams[0]), /DTSTART:20260816T000000Z/)
+  assert.equal(formatTime('2026-08-16T00:00:00Z'), '7:00 PM')
+  assert.equal(calendarEvent({ date: '2026-08-16T00:00:00Z', timeTbd: true, opponent: {} }, teams[0]), null)
+  const tbd = normalizeEvent(event({ id: 'tbd', date: '2026-08-16T00:00:00Z', usId: '16', opponentId: '24', detail: 'TBD' }), '16')
+  assert.equal(tbd.timeTbd, true)
 })
 
 test('schedule months group together and open only the relevant month initially', () => {
@@ -87,6 +94,8 @@ test('schedule months group together and open only the relevant month initially'
   assert.deepEqual(groups.map((group) => [group.label, group.games.length]), [['July 2026', 1], ['August 2026', 2]])
   assert.deepEqual([...initialOpenMonths(groups, new Date('2026-08-15T12:00:00Z'))], ['August 2026'])
   assert.deepEqual([...initialOpenMonths(groups, new Date('2027-01-01T12:00:00Z'), true)], ['July 2026'])
+  assert.deepEqual([...reconcileOpenMonths(new Set(['July 2026']), groups)], ['July 2026'])
+  assert.deepEqual([...reconcileOpenMonths(new Set(['Missing month']), groups)], ['August 2026'])
 })
 
 test('archive metadata includes the selected shareable view', () => {
@@ -94,6 +103,7 @@ test('archive metadata includes the selected shareable view', () => {
   assert.equal(meta.url, 'https://chicagosports.vercel.app/?team=cubs&season=2016&tab=archive&view=history')
   assert.match(meta.title, /Timeline/)
   assert.match(meta.description, /Chicago Cubs/i)
+  assert.match(canonicalState({ team: teamByKey('bulls'), season: 2026, tab: 'schedule' }, 'https://chicagosports.vercel.app').title, /^2025-26 Chicago Bulls/)
 })
 
 test('production upstream proxy is allowlisted and preserves safe queries', () => {

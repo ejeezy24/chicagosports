@@ -1,3 +1,5 @@
+import { seasonLabel } from './seasons.js'
+
 const ARCHIVE_LABELS = {
   story: 'Season story', compare: 'Compare', history: 'Timeline', records: 'Leaders',
   rivalries: 'Rivalries', search: 'Search', favorites: 'Favorites',
@@ -9,9 +11,10 @@ export function canonicalState({ team, season, tab, archiveView = 'story', inclu
   if (tab === 'archive' && archiveView !== 'story') params.set('view', archiveView)
   if (includeOlder) params.set('older', '1')
   const section = tab === 'archive' ? ARCHIVE_LABELS[archiveView] ?? 'Chicago archive' : TAB_LABELS[tab] ?? 'Chicago sports'
+  const label = seasonLabel(team, season)
   return {
     url: `${origin}/?${params}`,
-    title: `${season} ${team.name} ${section} | Chicago Sports`,
-    description: `${section} for the ${season} ${team.name}, with Chicago schedules, scores, statistics, and history.`,
+    title: `${label} ${team.name} ${section} | Chicago Sports`,
+    description: `${section} for the ${label} ${team.name}, with Chicago schedules, scores, statistics, and history.`,
   }
 }

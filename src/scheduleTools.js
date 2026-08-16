@@ -10,7 +10,7 @@ const escapeIcs = (value) => String(value ?? '').replace(/\\/g, '\\\\').replace(
 
 export function calendarEvent(game, team) {
   const scheduled = new Date(game.date)
-  if (Number.isNaN(scheduled.getTime()) || (scheduled.getUTCHours() === 0 && scheduled.getUTCMinutes() === 0)) return null
+  if (Number.isNaN(scheduled.getTime()) || game.timeTbd) return null
   const start = utcStamp(game.date)
   if (!start) return null
   const end = utcStamp(new Date(game.date).getTime() + 2 * 60 * 60_000)
@@ -52,4 +52,10 @@ export function initialOpenMonths(groups, now = new Date()) {
   const current = monthKey(now.toISOString())
   const match = groups.find((group) => group.label === current)
   return new Set([match?.label ?? groups[0].label])
+}
+
+export function reconcileOpenMonths(current, groups) {
+  const available = new Set(groups.map((group) => group.label))
+  const kept = new Set([...current].filter((label) => available.has(label)))
+  return kept.size ? kept : initialOpenMonths(groups)
 }

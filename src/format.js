@@ -46,8 +46,6 @@ export function formatDate(iso, { withYear = false } = {}) {
 export function formatTime(iso) {
   const d = parse(iso)
   if (!d) return ''
-  // ESPN uses midnight UTC as a placeholder for "time not announced".
-  if (d.getUTCHours() === 0 && d.getUTCMinutes() === 0) return 'TBD'
   return timeFmt.format(d)
 }
 
