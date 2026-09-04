@@ -51,6 +51,8 @@ export default function App() {
   const [season, setSeason] = useState(initial.season)
   const [tab, setTab] = useState(initial.tab)
   const [archiveView, setArchiveView] = useState(initial.archiveView)
+  const [seasonType, setSeasonType] = useState(initial.seasonType)
+  const [gameId, setGameId] = useState(initial.gameId)
   const [includeOlder, setIncludeOlder] = useState(initial.includeOlder)
   const [playerFocus, setPlayerFocus] = useState(null)
 
@@ -69,6 +71,10 @@ export default function App() {
   }, [])
 
   const selectTab = useCallback((nextTab) => {
+    if (nextTab !== 'schedule') {
+      setSeasonType(2)
+      setGameId(null)
+    }
     setTab(nextTab)
     scrollToPanel(nextTab)
   }, [scrollToPanel])
@@ -98,10 +104,22 @@ export default function App() {
     setSeason(next.season)
     setTab(next.tab)
     setArchiveView(next.archiveView)
+    setSeasonType(next.seasonType)
+    setGameId(next.gameId)
     setIncludeOlder(next.includeOlder)
   }, [])
 
-  useUrlSync({ teamKey, season, tab, archiveView, includeOlder }, restore, store.get('cs.team', DEFAULT_TEAM))
+  useUrlSync({ teamKey, season, tab, archiveView, seasonType, gameId, includeOlder }, restore, store.get('cs.team', DEFAULT_TEAM))
+
+  const selectTeam = useCallback((nextTeam) => {
+    setGameId(null)
+    setTeamKey(nextTeam)
+  }, [])
+
+  const selectSeasonType = useCallback((nextType) => {
+    setGameId(null)
+    setSeasonType(nextType)
+  }, [])
 
   // Carry the chosen year across teams where it exists; clamp where it doesn't.
   useEffect(() => {
@@ -155,7 +173,7 @@ export default function App() {
   const teamOverview = overviewState.data?.[team.key]
 
   useEffect(() => {
-    const meta = canonicalState({ team, season, tab, archiveView, includeOlder }, window.location.origin)
+    const meta = canonicalState({ team, season, tab, archiveView, seasonType, gameId, includeOlder }, window.location.origin)
     document.title = meta.title
     document.querySelector('link[rel="canonical"]')?.setAttribute('href', meta.url)
     document.querySelector('meta[property="og:url"]')?.setAttribute('content', meta.url)
@@ -164,7 +182,7 @@ export default function App() {
     document.querySelector('meta[name="description"]')?.setAttribute('content', meta.description)
     document.querySelector('meta[name="twitter:title"]')?.setAttribute('content', meta.title)
     document.querySelector('meta[name="twitter:description"]')?.setAttribute('content', meta.description)
-  }, [team, season, tab, archiveView, includeOlder])
+  }, [team, season, tab, archiveView, seasonType, gameId, includeOlder])
 
   return (
     <div className="app" style={{ '--team': accent }}>
@@ -182,11 +200,11 @@ export default function App() {
         <p>Scores, schedules, rosters, and history for the city&apos;s five major clubs.</p>
       </header>
 
-      <TodayBoard onSelect={setTeamKey} />
+      <TodayBoard onSelect={selectTeam} />
 
       <TeamPicker
         selected={team.key}
-        onSelect={setTeamKey}
+        onSelect={selectTeam}
         overview={overviewState.data}
       />
 
@@ -219,7 +237,10 @@ export default function App() {
             <select
               id="season"
               value={season}
-              onChange={(e) => setSeason(Number(e.target.value))}
+              onChange={(e) => {
+                setGameId(null)
+                setSeason(Number(e.target.value))
+              }}
             >
               {seasons.map((s) => (
                 <option key={s} value={s}>
@@ -272,7 +293,7 @@ export default function App() {
           <Archive key={`arc-${team.key}-${season}`} team={team} season={season} seasons={seasons} view={archiveView} onViewChange={setArchiveView} />
         )}
         {tab === 'schedule' && (
-          <Schedule key={`sch-${team.key}-${season}`} team={team} season={season} />
+          <Schedule key={`sch-${team.key}-${season}`} team={team} season={season} seasonType={seasonType} onSeasonTypeChange={selectSeasonType} gameId={gameId} onGameChange={setGameId} />
         )}
         {tab === 'roster' && (
           <Roster key={`ros-${team.key}-${season}`} team={team} season={season} onOpenPlayer={openPlayer} />

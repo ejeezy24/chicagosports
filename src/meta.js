@@ -6,11 +6,15 @@ const ARCHIVE_LABELS = {
 }
 const TAB_LABELS = { schedule: 'Schedule & scores', archive: 'Chicago archive', roster: 'Roster', players: 'Player stats', stats: 'Team stats', standings: 'Standings' }
 
-export function canonicalState({ team, season, tab, archiveView = 'story', includeOlder = false }, origin) {
+export function canonicalState({ team, season, tab, archiveView = 'story', seasonType = 2, gameId = null, includeOlder = false }, origin) {
   const params = new URLSearchParams({ team: team.key, season: String(season), tab })
   if (tab === 'archive' && archiveView !== 'story') params.set('view', archiveView)
+  if (tab === 'schedule' && seasonType !== 2) params.set('type', String(seasonType))
+  if (tab === 'schedule' && gameId) params.set('game', gameId)
   if (includeOlder) params.set('older', '1')
-  const section = tab === 'archive' ? ARCHIVE_LABELS[archiveView] ?? 'Chicago archive' : TAB_LABELS[tab] ?? 'Chicago sports'
+  const section = gameId && tab === 'schedule'
+    ? 'Game details'
+    : tab === 'archive' ? ARCHIVE_LABELS[archiveView] ?? 'Chicago archive' : TAB_LABELS[tab] ?? 'Chicago sports'
   const label = seasonLabel(team, season)
   return {
     url: `${origin}/?${params}`,

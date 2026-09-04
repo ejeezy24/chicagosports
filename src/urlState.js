@@ -41,6 +41,12 @@ export function parseParams(search) {
   const view = params.get('view')
   if (view && ARCHIVE_VIEWS.includes(view)) out.archiveView = view
 
+  const game = params.get('game')
+  if (game && /^[A-Za-z0-9_-]{1,80}$/.test(game)) out.gameId = game
+
+  const seasonType = params.get('type')
+  if (seasonType && /^[1-3]$/.test(seasonType)) out.seasonType = Number(seasonType)
+
   return out
 }
 
@@ -65,11 +71,14 @@ export function resolveState(search, storedTeamKey, now = new Date()) {
   const season =
     params.season !== undefined ? clampSeason(team, params.season, now) : currentSeasonFor(team, now)
 
+  const tab = params.tab ?? DEFAULT_TAB
   return {
     teamKey,
     season,
-    tab: params.tab ?? DEFAULT_TAB,
-    archiveView: (params.tab ?? DEFAULT_TAB) === 'archive' ? params.archiveView ?? 'story' : 'story',
+    tab,
+    archiveView: tab === 'archive' ? params.archiveView ?? 'story' : 'story',
+    seasonType: tab === 'schedule' && team.seasonTypes.some((type) => type.id === params.seasonType) ? params.seasonType : 2,
+    gameId: tab === 'schedule' ? params.gameId ?? null : null,
     includeOlder: (params.older ?? false) || season < team.modernFrom,
   }
 }
@@ -83,7 +92,7 @@ export function resolveState(search, storedTeamKey, now = new Date()) {
 export function toSearch(state, base = '') {
   const params = new URLSearchParams(base)
 
-  for (const key of ['team', 'season', 'tab', 'older', 'view']) params.delete(key)
+  for (const key of ['team', 'season', 'tab', 'older', 'view', 'type', 'game']) params.delete(key)
   const extras = params.toString()
 
   const mine = new URLSearchParams()
@@ -91,7 +100,20 @@ export function toSearch(state, base = '') {
   mine.set('season', String(state.season))
   mine.set('tab', state.tab)
   if (state.tab === 'archive' && state.archiveView && state.archiveView !== 'story') mine.set('view', state.archiveView)
+  if (state.tab === 'schedule' && state.seasonType && state.seasonType !== 2) mine.set('type', String(state.seasonType))
+  if (state.tab === 'schedule' && state.gameId) mine.set('game', state.gameId)
   if (state.includeOlder) mine.set('older', '1')
 
   return `?${mine.toString()}${extras ? `&${extras}` : ''}`
+}
+
+export function gameLink(href, gameId) {
+  if (!/^[A-Za-z0-9_-]{1,80}$/.test(String(gameId ?? ''))) return null
+  try {
+    const url = new URL(href)
+    url.searchParams.set('game', String(gameId))
+    return url.href
+  } catch {
+    return null
+  }
 }

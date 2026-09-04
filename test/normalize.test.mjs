@@ -42,7 +42,7 @@ import {
 import { archivedNbaSeason } from '../api/nba-history-archive.js'
 import { nbaSeasonKey, resultRows } from '../api/nba-history.js'
 import { sportsReference } from '../src/references.js'
-import { DEFAULT_TEAM, ARCHIVE_VIEWS, resolveState, toSearch } from '../src/urlState.js'
+import { DEFAULT_TEAM, ARCHIVE_VIEWS, gameLink, resolveState, toSearch } from '../src/urlState.js'
 import { ownDivisionFirst } from '../src/espn.js'
 import { coverageNote } from '../src/coverage.js'
 import { ARCHIVE, RIVALRIES, allArchiveEntries, cityChampionships } from '../src/archiveData.js'
@@ -1385,6 +1385,19 @@ test('the query string round-trips and keeps params it does not own', () => {
   const kept = toSearch(state, '?utm_source=x&team=stale')
   assert.ok(kept.includes('utm_source=x'), 'unknown params should be preserved')
   assert.equal((kept.match(/team=/g) ?? []).length, 1, 'and ours should not be duplicated')
+})
+
+test('schedule game links are validated and round-trip through the URL', () => {
+  const state = resolveState('?team=cubs&season=2026&tab=schedule&type=3&game=401234567', null, NOW)
+  assert.equal(state.seasonType, 3)
+  assert.equal(state.gameId, '401234567')
+  assert.equal(toSearch(state), '?team=cubs&season=2026&tab=schedule&type=3&game=401234567')
+  assert.equal(gameLink('https://chicagosports.vercel.app/?team=cubs&season=2026&tab=schedule&type=3', '401234567'), 'https://chicagosports.vercel.app/?team=cubs&season=2026&tab=schedule&type=3&game=401234567')
+  assert.equal(gameLink('not a URL', '401234567'), null)
+  assert.equal(resolveState('?tab=schedule&type=99&game=../../secret', null, NOW).seasonType, 2)
+  assert.equal(resolveState('?tab=schedule&type=99&game=../../secret', null, NOW).gameId, null)
+  assert.equal(resolveState('?tab=archive&type=3&game=401234567', null, NOW).gameId, null)
+  assert.equal(resolveState('?tab=archive&type=3&game=401234567', null, NOW).seasonType, 2)
 })
 
 test('archive views are validated and round-trip through shareable URLs', () => {

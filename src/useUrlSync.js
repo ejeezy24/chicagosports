@@ -4,12 +4,12 @@ import { resolveState, toSearch } from './urlState.js'
 /**
  * Keeps the address bar and the app in step, in both directions.
  *
- * @param state      {teamKey, season, tab, archiveView, includeOlder}
+ * @param state      {teamKey, season, tab, archiveView, seasonType, gameId, includeOlder}
  * @param onRestore  called with a resolved state when the user goes back/forward
  * @param storedTeamKey  localStorage fallback, for entries with no team parameter
  */
 export function useUrlSync(state, onRestore, storedTeamKey) {
-  const { teamKey, season, tab, archiveView, includeOlder } = state
+  const { teamKey, season, tab, archiveView, seasonType, gameId, includeOlder } = state
 
   // The first write only tidies the URL someone arrived on, so it must not add
   // a history entry. Nor must the write that follows a back/forward, or popping
@@ -27,7 +27,7 @@ export function useUrlSync(state, onRestore, storedTeamKey) {
     // immediately corrects again. The cleanup cancels the superseded write and
     // the cascade collapses into a single entry.
     const id = setTimeout(() => {
-      const next = toSearch({ teamKey, season, tab, archiveView, includeOlder }, window.location.search)
+      const next = toSearch({ teamKey, season, tab, archiveView, seasonType, gameId, includeOlder }, window.location.search)
       if (next === window.location.search) {
         firstWrite.current = false
         return
@@ -42,7 +42,7 @@ export function useUrlSync(state, onRestore, storedTeamKey) {
     }, 0)
 
     return () => clearTimeout(id)
-  }, [teamKey, season, tab, archiveView, includeOlder])
+  }, [teamKey, season, tab, archiveView, seasonType, gameId, includeOlder])
 
   useEffect(() => {
     const onPop = () => {

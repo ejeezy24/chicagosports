@@ -5,13 +5,13 @@ import { formatDate, formatTime, isSameDay } from '../format.js'
 import { currentSeasonFor, seasonLabel } from '../seasons.js'
 import { useAsync } from '../useAsync.js'
 import { useLivePoll } from '../useLivePoll.js'
-import { downloadCalendar, groupedMonths, initialOpenMonths, reconcileOpenMonths } from '../scheduleTools.js'
+import { calendarSchedule, downloadCalendar, downloadSchedule, groupedMonths, initialOpenMonths, reconcileOpenMonths } from '../scheduleTools.js'
+import { gameLink } from '../urlState.js'
 import { Async, Panel } from './ui.jsx'
 import { Boxscore } from './Boxscore.jsx'
 import { Venue } from './Venue.jsx'
 
-export function Schedule({ team, season }) {
-  const [seasonType, setSeasonType] = useState(2)
+export function Schedule({ team, season, seasonType, onSeasonTypeChange, gameId, onGameChange }) {
   // A current-season visitor normally wants the latest result or next fixture,
   // not an October game at the bottom of a long list. Older seasons remain a
   // chronological archive by default.
@@ -47,6 +47,7 @@ export function Schedule({ team, season }) {
     () => withLiveScores(scheduled, scoreboardScores(live.data)),
     [scheduled, live.data],
   )
+  const hasUpcomingCalendar = useMemo(() => Boolean(calendarSchedule(withScores, team)), [team, withScores])
 
   // Chronological reads like a fixture list; newest-first answers "what just
   // happened?", which is what you want mid-season.
@@ -62,8 +63,20 @@ export function Schedule({ team, season }) {
     if (previousStructure.current === monthStructure) return
     const firstLoad = previousStructure.current === null
     previousStructure.current = monthStructure
-    setOpenMonths((current) => firstLoad ? initialOpenMonths(monthGroups, new Date()) : reconcileOpenMonths(current, monthGroups))
-  }, [monthGroups, monthStructure])
+    setOpenMonths((current) => firstLoad ? initialOpenMonths(monthGroups, new Date(), gameId) : reconcileOpenMonths(current, monthGroups))
+  }, [gameId, monthGroups, monthStructure])
+
+  useEffect(() => {
+    if (!gameId) return
+    const group = monthGroups.find((entry) => entry.games.some((game) => String(game.id) === String(gameId)))
+    if (group) setOpenMonths((current) => current.has(group.label) ? current : new Set([...current, group.label]))
+  }, [gameId, monthGroups])
+
+  useEffect(() => {
+    if (!state.data || !gameId) return
+    const selected = withScores.find((game) => String(game.id) === String(gameId))
+    if (!selected || (selected.state !== 'in' && !selected.completed)) onGameChange(null)
+  }, [gameId, onGameChange, state.data, withScores])
   const toggleMonth = (label) => setOpenMonths((current) => {
     const next = new Set(current)
     if (next.has(label)) next.delete(label)
@@ -82,6 +95,15 @@ export function Schedule({ team, season }) {
       title={`${seasonLabel(team, season)} schedule`}
       aside={
         <div className="panel-controls">
+          {hasUpcomingCalendar ? (
+            <button
+              className="order-toggle schedule-calendar"
+              aria-label={`Add ${team.name} upcoming schedule to calendar`}
+              onClick={() => downloadSchedule(withScores, team)}
+            >
+              ＋ Calendar
+            </button>
+          ) : null}
           {hasToday ? (
             <button className="order-toggle" onClick={jumpToToday}>
               Today
@@ -101,7 +123,7 @@ export function Schedule({ team, season }) {
               <button
                 key={t.id}
                 aria-pressed={seasonType === t.id}
-                onClick={() => setSeasonType(t.id)}
+                onClick={() => onSeasonTypeChange(t.id)}
               >
                 {t.label}
               </button>
@@ -168,7 +190,7 @@ export function Schedule({ team, season }) {
                     </button>
                     <div id={groupId} hidden={!open}>
                       {open ? group.games.map((g) => (
-                        <GameRow key={g.id ?? `${g.date}-${g.opponent.abbr}`} game={g} team={team} />
+                        <GameRow key={g.id ?? `${g.date}-${g.opponent.abbr}`} game={g} team={team} selected={String(g.id) === String(gameId)} onGameChange={onGameChange} />
                       )) : null}
                     </div>
                   </section>
@@ -188,13 +210,24 @@ export function Schedule({ team, season }) {
  * object identity for games it didn't touch, so only the game actually being
  * played re-renders.
  */
-const GameRow = memo(function GameRow({ game, team }) {
-  const [open, setOpen] = useState(false)
+const GameRow = memo(function GameRow({ game, team, selected, onGameChange }) {
   const panelId = useId()
+  const [copied, setCopied] = useState(false)
   // Nothing to show for a game that hasn't been played yet.
   const canExpand = game.hasBoxscore !== false && (game.completed || game.state === 'in')
+  const open = canExpand && selected
   const scheduled = new Date(game.date)
   const canCalendar = !game.completed && game.state !== 'in' && !game.timeTbd && Number.isFinite(scheduled.getTime())
+  const copyGameLink = async () => {
+    try {
+      const link = gameLink(window.location.href, game.id)
+      if (!link) throw new Error('Invalid game link')
+      await navigator.clipboard.writeText(link)
+      setCopied(true)
+    } catch {
+      setCopied(false)
+    }
+  }
 
   // Kept as parts rather than a joined string so the venue can carry its own
   // hover card; away grounds fall back to plain text inside <Venue>.
@@ -276,7 +309,7 @@ const GameRow = memo(function GameRow({ game, team }) {
           className="g-toggle"
           aria-expanded={open}
           aria-controls={panelId}
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => onGameChange(open ? null : String(game.id))}
         >
           <span aria-hidden="true">{open ? '−' : '+'}</span>
           <span className="sr-only">
@@ -290,6 +323,12 @@ const GameRow = memo(function GameRow({ game, team }) {
 
     {open ? (
       <div id={panelId}>
+        <div className="game-detail-tools">
+          <span>Shareable game details</span>
+          <button className="game-link-button" onClick={copyGameLink} aria-label={copied ? 'Game link copied' : 'Copy game link'}>
+            {copied ? '✓ Copied' : '↗ Copy link'}
+          </button>
+        </div>
         <Boxscore team={team} eventId={game.id} />
       </div>
     ) : null}

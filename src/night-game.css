@@ -908,6 +908,9 @@ tbody tr.me {
 .month-toggle span:last-child { color: var(--muted); font-family: Silkscreen, monospace; font-size: 10px; }
 .calendar-button { display: inline-grid; width: 28px; height: 28px; place-items: center; border: 2px solid var(--line); background: var(--panel); color: var(--team); font-size: 16px; line-height: 1; }
 .calendar-button:hover { background: var(--team); color: #fff; }
+.game-detail-tools { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; border-bottom: 2px solid var(--line); background: color-mix(in srgb, var(--team) 8%, var(--panel-2)); color: var(--muted); font-family: Silkscreen, monospace; font-size: 10px; text-transform: uppercase; }
+.game-link-button { min-height: 32px; border: 2px solid var(--line); background: var(--paper-highlight); box-shadow: 2px 2px 0 var(--shadow); color: var(--team); font-family: 'Press Start 2P', Silkscreen, monospace; font-size: 7px; text-transform: uppercase; }
+.game-link-button:hover { background: var(--team); color: #fff; }
 
 .stats-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 14px; border-bottom: 2px solid var(--line); background: var(--panel-2); }
 .stats-toolbar p { margin: 0; color: var(--muted); font-size: 12px; }
@@ -926,6 +929,7 @@ tbody tr.me th[scope='row'] { color: var(--team); font-weight: 700; border-botto
   .today-board { grid-template-columns: 1fr; }
   .today-head { border-right: 0; border-bottom: 3px solid var(--line); }
   .today-days button { min-height: 44px; }
+  .panel-controls .order-toggle, .panel-controls .segmented button, .game-link-button { min-height: 44px; }
   .today-games { display: flex; overflow-x: auto; scroll-snap-type: inline mandatory; }
   .today-games button { min-width: 180px; scroll-snap-align: start; }
   .teams { padding-right: 28px; -webkit-mask-image: linear-gradient(to right, #000 0 calc(100% - 24px), transparent 100%); mask-image: linear-gradient(to right, #000 0 calc(100% - 24px), transparent 100%); }
