@@ -7,6 +7,7 @@ import { useAsync } from '../useAsync.js'
 import { useLivePoll } from '../useLivePoll.js'
 import { calendarSchedule, downloadCalendar, downloadSchedule, groupedMonths, initialOpenMonths, reconcileOpenMonths } from '../scheduleTools.js'
 import { gameLink } from '../urlState.js'
+import { copyText } from '../share.js'
 import { Async, Panel } from './ui.jsx'
 import { Boxscore } from './Boxscore.jsx'
 import { Venue } from './Venue.jsx'
@@ -212,22 +213,29 @@ export function Schedule({ team, season, seasonType, onSeasonTypeChange, gameId,
  */
 const GameRow = memo(function GameRow({ game, team, selected, onGameChange }) {
   const panelId = useId()
-  const [copied, setCopied] = useState(false)
+  const [copyStatus, setCopyStatus] = useState('idle')
+  const copyRequest = useRef(0)
+  useEffect(() => () => {
+    copyRequest.current += 1
+  }, [])
   // Nothing to show for a game that hasn't been played yet.
   const canExpand = game.hasBoxscore !== false && (game.completed || game.state === 'in')
   const open = canExpand && selected
   const scheduled = new Date(game.date)
   const canCalendar = !game.completed && game.state !== 'in' && !game.timeTbd && Number.isFinite(scheduled.getTime())
   const copyGameLink = async () => {
-    try {
-      const link = gameLink(window.location.href, game.id)
-      if (!link) throw new Error('Invalid game link')
-      await navigator.clipboard.writeText(link)
-      setCopied(true)
-    } catch {
-      setCopied(false)
-    }
+    const link = gameLink(window.location.href, game.id)
+    if (!link) return setCopyStatus('failed')
+    const request = ++copyRequest.current
+    setCopyStatus('idle')
+    const result = await copyText(link, {}, () => request === copyRequest.current)
+    if (request === copyRequest.current && result) setCopyStatus(result)
   }
+  const copied = copyStatus === 'copied'
+  const copyLabel = copied
+    ? 'Game link copied'
+    : copyStatus === 'manual' ? 'Game link opened for manual copy'
+      : copyStatus === 'failed' ? 'Could not copy game link' : 'Copy game link'
 
   // Kept as parts rather than a joined string so the venue can carry its own
   // hover card; away grounds fall back to plain text inside <Venue>.
@@ -325,8 +333,8 @@ const GameRow = memo(function GameRow({ game, team, selected, onGameChange }) {
       <div id={panelId}>
         <div className="game-detail-tools">
           <span>Shareable game details</span>
-          <button className="game-link-button" onClick={copyGameLink} aria-label={copied ? 'Game link copied' : 'Copy game link'}>
-            {copied ? '✓ Copied' : '↗ Copy link'}
+          <button className="game-link-button" onClick={copyGameLink} aria-label={copyLabel}>
+            {copied ? '✓ Copied' : copyStatus === 'manual' ? 'Copy shown' : copyStatus === 'failed' ? 'Try again' : '↗ Copy link'}
           </button>
         </div>
         <Boxscore team={team} eventId={game.id} />
