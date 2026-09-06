@@ -27,6 +27,8 @@ export function cityScoreboardRows(payloads, teams) {
         teamKey: team.key,
         team: team.short,
         eventId: game.id,
+        eventSeason: game.season ?? payload.season?.year ?? null,
+                seasonType: game.seasonType ?? payload.season?.type?.id ?? payload.season?.type ?? null,
         live,
         final,
         status: live ? `LIVE${game.detail ? ` · ${game.detail}` : ''}` : final ? 'FINAL' : (formatTime(game.date) || 'TBD'),

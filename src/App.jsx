@@ -18,6 +18,7 @@ import { Venue } from './components/Venue.jsx'
 import { Archive } from './components/Archive.jsx'
 import { TodayBoard } from './components/TodayBoard.jsx'
 import { canonicalState } from './meta.js'
+import { scoreboardDestination } from './gameDay.js'
 
 const store = {
   get(key, fallback) {
@@ -116,6 +117,12 @@ export default function App() {
     setTeamKey(nextTeam)
   }, [])
 
+  const selectGame = useCallback((row) => {
+    const next = scoreboardDestination(row)
+    if (!next) return
+    restore(next)
+  }, [restore])
+
   const selectSeasonType = useCallback((nextType) => {
     setGameId(null)
     setSeasonType(nextType)
@@ -200,7 +207,7 @@ export default function App() {
         <p>Scores, schedules, rosters, and history for the city&apos;s five major clubs.</p>
       </header>
 
-      <TodayBoard onSelect={selectTeam} />
+      <TodayBoard onSelect={selectGame} />
 
       <TeamPicker
         selected={team.key}
@@ -293,7 +300,7 @@ export default function App() {
           <Archive key={`arc-${team.key}-${season}`} team={team} season={season} seasons={seasons} view={archiveView} onViewChange={setArchiveView} />
         )}
         {tab === 'schedule' && (
-          <Schedule key={`sch-${team.key}-${season}`} team={team} season={season} seasonType={seasonType} onSeasonTypeChange={selectSeasonType} gameId={gameId} onGameChange={setGameId} />
+          <Schedule key={`sch-${team.key}-${season}-${seasonType}`} team={team} season={season} seasonType={seasonType} onSeasonTypeChange={selectSeasonType} gameId={gameId} onGameChange={setGameId} />
         )}
         {tab === 'roster' && (
           <Roster key={`ros-${team.key}-${season}`} team={team} season={season} onOpenPlayer={openPlayer} />

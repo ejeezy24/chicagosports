@@ -64,9 +64,13 @@ export function normalizeEvent(event, espnTeamId) {
 
   const gameDate = first(event.date, comp.date) ?? null
   const detail = first(type.shortDetail, type.detail, type.description) ?? null
+  const seasonYear = Number(first(event.season?.year, comp.season?.year, event.season?.slug))
+  const seasonType = Number(first(event.season?.type?.id, comp.season?.type?.id, event.season?.type))
 
   return {
     id: event.id ?? comp.id,
+    season: Number.isFinite(seasonYear) ? seasonYear : null,
+    seasonType: Number.isFinite(seasonType) ? seasonType : null,
     date: gameDate,
     week: event.week?.number ?? null,
     home: us?.homeAway === 'home',

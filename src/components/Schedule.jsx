@@ -8,6 +8,7 @@ import { useLivePoll } from '../useLivePoll.js'
 import { calendarSchedule, downloadCalendar, downloadSchedule, groupedMonths, initialOpenMonths, reconcileOpenMonths } from '../scheduleTools.js'
 import { gameLink } from '../urlState.js'
 import { copyText } from '../share.js'
+import { previewDetails } from '../gameDay.js'
 import { Async, Panel } from './ui.jsx'
 import { Boxscore } from './Boxscore.jsx'
 import { Venue } from './Venue.jsx'
@@ -76,7 +77,7 @@ export function Schedule({ team, season, seasonType, onSeasonTypeChange, gameId,
   useEffect(() => {
     if (!state.data || !gameId) return
     const selected = withScores.find((game) => String(game.id) === String(gameId))
-    if (!selected || (selected.state !== 'in' && !selected.completed)) onGameChange(null)
+    if (!selected) onGameChange(null)
   }, [gameId, onGameChange, state.data, withScores])
   const toggleMonth = (label) => setOpenMonths((current) => {
     const next = new Set(current)
@@ -218,11 +219,15 @@ const GameRow = memo(function GameRow({ game, team, selected, onGameChange }) {
   useEffect(() => () => {
     copyRequest.current += 1
   }, [])
-  // Nothing to show for a game that hasn't been played yet.
-  const canExpand = game.hasBoxscore !== false && (game.completed || game.state === 'in')
+  const rowRef = useRef(null)
+  const hasBoxscore = game.hasBoxscore !== false && (game.completed || game.state === 'in')
+  const preview = !game.completed && game.state !== 'in' && game.state !== 'post' ? previewDetails(game, team) : null
+  const canExpand = Boolean(game.id && (hasBoxscore || preview))
   const open = canExpand && selected
-  const scheduled = new Date(game.date)
-  const canCalendar = !game.completed && game.state !== 'in' && !game.timeTbd && Number.isFinite(scheduled.getTime())
+  const canCalendar = Boolean(preview?.canCalendar)
+  useEffect(() => {
+    if (open) rowRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' })
+  }, [open])
   const copyGameLink = async () => {
     const link = gameLink(window.location.href, game.id)
     if (!link) return setCopyStatus('failed')
@@ -248,10 +253,10 @@ const GameRow = memo(function GameRow({ game, team, selected, onGameChange }) {
 
   return (
     <>
-    <div className={`game${isSameDay(game.date) ? ' today' : ''}${open ? ' is-open' : ''}`}>
+    <div ref={rowRef} className={`game${isSameDay(game.date) ? ' today' : ''}${open ? ' is-open' : ''}`}>
       <div className="g-date">
         {formatDate(game.date)}
-        <small>{game.completed ? 'Final' : formatTime(game.date)}</small>
+        <small>{game.completed ? 'Final' : game.timeTbd ? 'Time TBD' : formatTime(game.date)}</small>
       </div>
 
       {game.opponent.logo ? (
@@ -299,7 +304,7 @@ const GameRow = memo(function GameRow({ game, team, selected, onGameChange }) {
           </>
         ) : (
           <>
-            <span className="upcoming">{game.detail ?? formatTime(game.date)}</span>
+            <span className="upcoming">{preview?.status}</span>
             {canCalendar ? (
               <button className="calendar-button" onClick={() => downloadCalendar(game, team)} title="Download calendar event">
                 <span aria-hidden="true">＋</span>
@@ -321,7 +326,7 @@ const GameRow = memo(function GameRow({ game, team, selected, onGameChange }) {
         >
           <span aria-hidden="true">{open ? '−' : '+'}</span>
           <span className="sr-only">
-            {open ? 'Hide' : 'Show'} boxscore for {game.home ? 'vs' : '@'} {game.opponent.name}
+            {open ? 'Hide' : 'Show'} {hasBoxscore ? 'boxscore' : 'game preview'} for {game.home ? 'vs' : '@'} {game.opponent.name}
           </span>
         </button>
       ) : (
@@ -337,7 +342,19 @@ const GameRow = memo(function GameRow({ game, team, selected, onGameChange }) {
             {copied ? '✓ Copied' : copyStatus === 'manual' ? 'Copy shown' : copyStatus === 'failed' ? 'Try again' : '↗ Copy link'}
           </button>
         </div>
-        <Boxscore team={team} eventId={game.id} />
+        {hasBoxscore ? <Boxscore team={team} gameId={game.id} /> : (
+          <section className="game-preview" aria-label="Game preview">
+            <h3>{preview.matchup}</h3>
+            <p>{preview.dateTime} · Chicago time</p>
+            {preview.status ? <p>{preview.status}</p> : null}
+            <dl>
+              <div><dt>Venue</dt><dd>{preview.venue}</dd></div>
+              <div><dt>Broadcast</dt><dd>{preview.broadcast}</dd></div>
+            </dl>
+            <p className="preview-note">Broadcast listed by the provider; availability and local restrictions may vary.</p>
+            {canCalendar ? <button className="order-toggle" onClick={() => downloadCalendar(game, team)}>Add this game to calendar</button> : null}
+          </section>
+        )}
       </div>
     ) : null}
     </>

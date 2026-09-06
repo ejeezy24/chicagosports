@@ -56,7 +56,7 @@ export function TodayBoard({ onSelect }) {
       </div>
       <div className="today-games">
         {rows.length ? rows.map((row) => (
-          <button key={`${row.teamKey}-${row.eventId}`} onClick={() => onSelect(row.teamKey)} style={{ '--card-color': accentFor(TEAMS.find((team) => team.key === row.teamKey)) }}>
+          <button key={`${row.teamKey}-${row.eventId}`} onClick={() => onSelect(row)} style={{ '--card-color': accentFor(TEAMS.find((team) => team.key === row.teamKey)) }}>
             <span className={row.live ? 'is-live' : ''}>{row.status}</span>
             <strong>{row.team}</strong>
             <em>{row.detail}</em>
