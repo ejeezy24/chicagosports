@@ -11,6 +11,7 @@ import './night-game.css'
 import './fan.css'
 import './design-system.css'
 import './shell-layout.css'
+import './team-theme.css'
 import './panel-layout.css'
 import './motion.css'
 

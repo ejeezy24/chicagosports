@@ -224,6 +224,10 @@ export default function App() {
   }, [team, season, tab, archiveView, seasonType, gameId, includeOlder])
 
   return (
+    <div
+      className="team-theme"
+      style={{ '--team-primary': team.color, '--team-secondary': team.accent ?? team.color }}
+    >
     <div className="app" style={{ '--team': accent }}>
       <a className="skip-link" href="#main-content">Skip to content</a>
       <header className="masthead">
@@ -367,6 +371,7 @@ export default function App() {
           <p>Live league feeds power current schedules and statistics. Historical coverage varies by team and season; archive stories and franchise records link to their official sources. Favorites stay in this browser and are not uploaded.</p>
         </details>
       </footer>
+    </div>
     </div>
   )
 }
