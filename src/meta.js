@@ -4,7 +4,7 @@ const ARCHIVE_LABELS = {
   story: 'Season story', compare: 'Compare', history: 'Timeline', records: 'Leaders',
   rivalries: 'Rivalries', search: 'Search', favorites: 'Favorites',
 }
-const TAB_LABELS = { schedule: 'Schedule & scores', archive: 'Chicago archive', roster: 'Roster', players: 'Player stats', stats: 'Team stats', standings: 'Standings', heatmap: 'Season heatmap', rivalry: 'Rivalries', showdown: 'Season showdown', tonight: 'Chicago Tonight', mygames: 'My Games', arcade: 'Daily Arcade' }
+const TAB_LABELS = { schedule: 'Schedule & scores', archive: 'Chicago archive', roster: 'Roster', players: 'Player stats', stats: 'Team stats', standings: 'Standings', greatgames: 'Great game finder', playoffrace: 'Playoff race', heatmap: 'Season heatmap', rivalry: 'Rivalries', showdown: 'Season showdown', tonight: 'Chicago Tonight', mygames: 'My Games', arcade: 'Daily Arcade' }
 
 export function canonicalState({ team, season, tab, archiveView = 'story', seasonType = 2, gameId = null, includeOlder = false }, origin) {
   const params = new URLSearchParams({ team: team.key, season: String(season), tab })

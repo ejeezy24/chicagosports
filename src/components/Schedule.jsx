@@ -17,7 +17,7 @@ import { TicketEditor } from './GameCard.jsx'
 import { ScheduleFilters, DEFAULT_FILTERS } from './ScheduleFilters.jsx'
 import { previewDetails } from '../gameDay.js'
 import { Async, Panel } from './ui.jsx'
-import { Boxscore } from './Boxscore.jsx'
+import { LiveGameCenter } from './LiveGameCenter.jsx'
 import { Venue } from './Venue.jsx'
 
 export function Schedule({ team, season, seasonType, onSeasonTypeChange, gameId, onGameChange }) {
@@ -367,7 +367,7 @@ const GameRow = memo(function GameRow({ game, team, selected, onGameChange }) {
             {copied ? '✓ Copied' : copyStatus === 'manual' ? 'Copy shown' : copyStatus === 'failed' ? 'Try again' : '↗ Copy link'}
           </button>
         </div>
-        {hasBoxscore ? <SpoilerGate scope={ticketKey} label="boxscore"><Boxscore team={team} eventId={game.id} live={game.state === 'in'} /></SpoilerGate> : (
+        {hasBoxscore ? <SpoilerGate scope={ticketKey} label="boxscore"><LiveGameCenter team={team} eventId={game.id} live={game.state === 'in'} /></SpoilerGate> : (
           <section className="game-preview" aria-label="Game preview">
             <h3>{preview.matchup}</h3>
             <p>{preview.dateTime} · Chicago time</p>

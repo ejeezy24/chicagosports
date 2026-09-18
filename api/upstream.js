@@ -20,6 +20,19 @@ export function upstreamUrl(source, path, params = new URLSearchParams()) {
   return `${origin}/${path.replace(/^\/+/, '')}${suffix ? `?${suffix}` : ''}`
 }
 
+// Live panels poll every 30 seconds; a multi-minute edge cache would keep
+// returning the same play even when the client explicitly refreshes.
+export function upstreamCacheControl(source, path, status) {
+  if (status < 200 || status >= 300) return 'no-store'
+  if (source === 'site' && /\/(scoreboard|summary|playbyplay|teams\/\d+(?:\/schedule)?)\/?$/.test(path ?? '')) {
+    return 'public, max-age=0, s-maxage=15, must-revalidate'
+  }
+  if (source === 'site' && /\/standings\/?$/.test(path ?? '')) {
+    return 'public, max-age=0, s-maxage=60, stale-while-revalidate=60'
+  }
+  return 'public, max-age=0, s-maxage=300, stale-while-revalidate=900'
+}
+
 function getBody(url) {
   return new Promise((resolve, reject) => {
     // ESPN currently denies browser and Node agents but accepts the same public
@@ -62,13 +75,12 @@ export default async function handler(req, res) {
     res.setHeader('Content-Type', response.contentType)
     res.setHeader(
       'Cache-Control',
-      response.status >= 200 && response.status < 300
-        ? 'public, s-maxage=300, stale-while-revalidate=900'
-        : 'no-store',
+      upstreamCacheControl(incoming.searchParams.get('source'), incoming.searchParams.get('path'), response.status),
     )
     return res.end(response.body)
   } catch (error) {
     console.error('[api/upstream] request failed', { source: incoming.searchParams.get('source'), error: String(error?.message ?? error) })
+    res.setHeader('Cache-Control', 'no-store')
     res.statusCode = String(error?.message).includes('timed out') ? 504 : 502
     res.setHeader('Content-Type', 'application/json')
     return res.end(JSON.stringify({ error: 'Upstream request failed' }))

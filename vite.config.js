@@ -5,11 +5,8 @@ import react from '@vitejs/plugin-react'
 // never has to care about CORS. `vite dev` and `vite preview` proxy them here;
 // vercel.json does the same rewrites for a deployed build. If neither is in
 // play (plain static hosting), src/api.js falls back to calling ESPN directly.
-// No spoofed User-Agent. It used to carry a browser one to avoid the CDN
-// answering server-to-server requests differently; that has since inverted —
-// site.api.espn.com now returns 403 for exactly that header, while the same
-// request with a plain agent succeeds. Production never set it and was
-// unaffected, so dev was the only thing broken.
+// Match the production proxy's plain client agent; ESPN rejects forwarded
+// browser agents and can also reject a missing agent on schedule endpoints.
 const espnProxy = (target, prefix) => ({
   target,
   changeOrigin: true,
@@ -22,7 +19,7 @@ const espnProxy = (target, prefix) => ({
       // caller; strip them so dev behaves like the production rewrite.
       proxyReq.removeHeader('origin')
       proxyReq.removeHeader('referer')
-      proxyReq.removeHeader('user-agent')
+      proxyReq.setHeader('user-agent', 'curl/8.0.1')
     })
   },
 })
@@ -46,6 +43,7 @@ const proxy = {
  */
 function vercelFunctions() {
   const functions = {
+    '/api/nfl-schedule': '/api/nfl-schedule.js',
     '/api/nfl-roster': '/api/nfl-roster.js',
     '/api/nfl-player-stats': '/api/nfl-player-stats.js',
     '/api/nba-history': '/api/nba-history.js',
@@ -73,3 +71,4 @@ export default defineConfig({
   server: { proxy },
   preview: { proxy },
 })
+

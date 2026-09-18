@@ -1,0 +1,23 @@
+.live-game-center { display: grid; gap: 16px; }
+.live-scoreboard { border: 3px solid var(--line); background: var(--scoreboard, #111625); color: var(--scoreboard-ink, #ffd85a); padding: 12px; box-shadow: 4px 4px 0 var(--shadow); }
+.live-scoreboard.is-live { border-color: var(--live, #a14e00); }
+.live-status-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid currentColor; padding-bottom: 8px; }
+.live-status { font-weight: 700; letter-spacing: .08em; }
+.is-live .live-status { color: #ffb347; }
+.live-period, .live-clock { color: #fff; }
+.live-refresh { margin-left: auto; color: inherit; }
+.live-score-teams { display: grid; gap: 8px; padding-top: 12px; }
+.live-team { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 8px; font-size: 1.1em; }
+.live-team img { width: 24px; height: 24px; object-fit: contain; }
+.live-team strong { font-size: 1.5em; color: #fff; }
+.live-team.is-us span { font-weight: 700; }
+.live-section, .live-boxscore { border-top: 3px solid var(--line); padding-top: 10px; }
+.live-section h3, .live-boxscore h3 { margin: 0 0 10px; font-size: .95rem; }
+.live-performers { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+.live-performers > div { border: 1px solid var(--rule); padding: 8px; display: grid; gap: 4px; }
+.live-performers span, .live-unavailable { color: var(--muted); font-size: .8rem; }
+.live-plays summary { cursor: pointer; font-weight: 700; display: flex; justify-content: space-between; }
+.live-plays ol { margin: 10px 0 0; padding-left: 26px; }
+.live-plays li { padding: 5px 0; border-bottom: 1px solid var(--rule); font-size: .85rem; }
+.live-plays li span { color: var(--muted); }
+.live-boxscore { margin-top: 4px; }

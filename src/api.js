@@ -118,8 +118,8 @@ function cached(key) {
   return entry.pending
 }
 
-function remember(key, pending) {
-  cache.set(key, { pending, expiresAt: Date.now() + CACHE_TTL_MS })
+function remember(key, pending, ttl = CACHE_TTL_MS) {
+  cache.set(key, { pending, expiresAt: Date.now() + ttl })
   while (cache.size > CACHE_MAX_ENTRIES) cache.delete(cache.keys().next().value)
 }
 
@@ -155,7 +155,9 @@ async function request(hostKey, path, params, options = {}) {
     }
   })()
 
-  remember(key, pending)
+  const ttl = /\/(scoreboard|summary|teams\/\d+(?:\/schedule)?)\/?$/.test(path) ? 30_000
+    : /\/standings\/?$/.test(path) ? 60_000 : CACHE_TTL_MS
+  remember(key, pending, ttl)
   // Don't cache failures — but only evict this attempt. Without the identity
   // check a failed refresh would throw away a newer, good payload that other
   // panels are already awaiting. Unreachable before polling existed.
@@ -328,10 +330,10 @@ function getArchivePlayerStats(team, season) {
 }
 
 /** League standings for a season, division level. */
-export function getStandings(team, season) {
+export function getStandings(team, season, { level = 3, fresh } = {}) {
   return request('site', `/apis/v2/sports/${team.sport}/${team.league}/standings`, {
     season,
-    level: 3,
+    level,
     seasontype: 2,
-  })
+  }, { fresh })
 }

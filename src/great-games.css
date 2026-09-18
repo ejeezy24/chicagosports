@@ -1,0 +1,12 @@
+.great-games-controls { padding: 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.great-games-controls label { display: grid; gap: 5px; color: var(--muted); font-size: .7rem; }
+.great-games-controls select, .great-games-controls input { width: 100%; min-height: 36px; }
+.great-games-search { grid-column: span 2; }
+.great-games-list { display: grid; gap: 14px; }
+.great-games-verification { padding: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; color: var(--muted); font-size: .72rem; }
+.great-games-verification strong { width: 100%; color: var(--text); font-size: .85rem; }
+.great-games-verification small { width: 100%; }
+.great-game-result { position: relative; }
+.great-game-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: -8px; position: relative; z-index: 1; padding-left: 10px; }
+.great-game-tags span { border: 1px solid var(--team); background: var(--panel, #101728); color: var(--team); padding: 4px 6px; font-size: .58rem; text-transform: uppercase; }
+@media (max-width: 520px) { .great-games-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); } .great-games-search { grid-column: span 2; } }

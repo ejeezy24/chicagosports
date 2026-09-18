@@ -24,21 +24,26 @@ export function Boxscore({ team, eventId, live = false }) {
         isEmpty={(d) => !boxscore(d, team.espnId, team.sport)}
         empty="No boxscore published for this game."
       >
-        {(data) => {
-          const box = boxscore(data, team.espnId, team.sport)
-          return (
-            <>
-              <LineScore box={box} />
-              {box.playerTables.map((side) => (
-                <PlayerTables key={side.team.abbr || side.team.name} side={side} />
-              ))}
-              {box.statGroups.length > 0 ? <StatComparison box={box} /> : null}
-              {box.info ? <GameInfo info={box.info} /> : null}
-            </>
-          )
-        }}
+        {(data) => <BoxscoreContent team={team} data={data} />}
       </Async>
     </div>
+  )
+}
+
+/** Render an already fetched summary. LiveGameCenter uses this to keep one
+ * summary request as the source for both its scoreboard and full boxscore. */
+export function BoxscoreContent({ team, data }) {
+  const box = boxscore(data, team.espnId, team.sport)
+  if (!box) return null
+  return (
+    <>
+      <LineScore box={box} />
+      {box.playerTables.map((side) => (
+        <PlayerTables key={side.team.abbr || side.team.name} side={side} />
+      ))}
+      {box.statGroups.length > 0 ? <StatComparison box={box} /> : null}
+      {box.info ? <GameInfo info={box.info} /> : null}
+    </>
   )
 }
 

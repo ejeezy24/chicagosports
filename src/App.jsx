@@ -20,6 +20,8 @@ import { TodayBoard } from './components/TodayBoard.jsx'
 import { canonicalState } from './meta.js'
 import { scoreboardDestination } from './gameDay.js'
 
+import { GreatGames } from './components/GreatGames.jsx'
+import { PlayoffRace } from './components/PlayoffRace.jsx'
 import { Tonight } from './components/Tonight.jsx'
 import { MyGames } from './components/MyGames.jsx'
 import { Arcade } from './components/Arcade.jsx'
@@ -312,6 +314,8 @@ export default function App() {
 
       <main id="main-content">
         <div id={`panel-${tab}`} role={globalTab ? undefined : 'tabpanel'} aria-labelledby={globalTab ? undefined : `tab-${tab}`} tabIndex={-1}>
+        {tab === 'greatgames' && <GreatGames key={team.key + season} team={team} season={season} />}
+        {tab === 'playoffrace' && <PlayoffRace key={team.key + season} team={team} season={season} />}
         {tab === 'tonight' && <Tonight />}
         {tab === 'mygames' && <MyGames onBrowse={() => selectTab('schedule')} />}
         {tab === 'arcade' && <Arcade />}

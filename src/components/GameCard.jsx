@@ -3,7 +3,7 @@ import { useFan } from '../FanContext.jsx'
 import { gameKey, isCancelled } from '../fan.js'
 import { calendarGames, downloadCalendar } from '../calendar.js'
 import { formatDate, formatTime, isSameDay } from '../format.js'
-import { Boxscore } from './Boxscore.jsx'
+import { LiveGameCenter } from './LiveGameCenter.jsx'
 import { Venue } from './Venue.jsx'
 
 export function GameCard({ game, team, defaultOpen = false, showTeam = false }) {
@@ -38,7 +38,7 @@ export function GameCard({ game, team, defaultOpen = false, showTeam = false }) 
       {canExpand ? <button className="text-button" aria-expanded={open && visible} aria-controls={panelId} onClick={() => { if (!visible) fan.reveal(key); setOpen((v) => !visible || !v) }}>{open && visible ? '− Hide' : '+ Show'} boxscore</button> : null}
     </div>
     {editing ? <TicketEditor key={key} team={team} game={game} onClose={() => setEditing(false)} /> : null}
-    {canExpand && open && visible ? <div id={panelId}><Boxscore team={team} eventId={game.id} live={game.state === 'in'} /></div> : null}
+    {canExpand && open && visible ? <div id={panelId}><LiveGameCenter team={team} eventId={game.id} live={game.state === 'in'} /></div> : null}
   </article>
 }
 

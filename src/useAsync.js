@@ -12,7 +12,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
  * boxscore with it — would be worse than one that updates a beat late.
  */
 export function useAsync(loader, deps) {
-  const [state, setState] = useState({ loading: true, data: null, error: null, updatedAt: null })
+  const [state, setState] = useState({ loading: true, data: null, error: null, refreshError: null, updatedAt: null })
   const [nonce, setNonce] = useState(0)
   const soft = useRef(false)
 
@@ -31,17 +31,20 @@ export function useAsync(loader, deps) {
     const isSoft = soft.current
     soft.current = false
 
-    if (!isSoft) setState({ loading: true, data: null, error: null, updatedAt: null })
+    if (!isSoft) setState({ loading: true, data: null, error: null, refreshError: null, updatedAt: null })
 
     Promise.resolve()
       .then(() => loader({ fresh: isSoft }))
       .then(
-        (data) => current && setState({ loading: false, data, error: null, updatedAt: Date.now() }),
+        (data) => current && setState({ loading: false, data, error: null, refreshError: null, updatedAt: Date.now() }),
         (error) => {
           if (!current) return
           // A refresh that fails keeps whatever is already on screen. One flaky
           // poll shouldn't replace a working scoreboard with an error panel.
-          if (isSoft) return
+          if (isSoft) {
+            setState((previous) => ({ ...previous, refreshError: error }))
+            return
+          }
           setState({ loading: false, data: null, error, updatedAt: null })
         },
       )
