@@ -219,3 +219,44 @@ game that changed rather than all 165.
 Measure before changing anything here.
 
 Unofficial, and unaffiliated with ESPN or any club.
+
+## The fan features
+
+- **Chicago Tonight** combines the five clubs in Today, Tomorrow and Friday–Sunday
+  weekend views. Each day is fetched separately because ESPN’s MLB scoreboard
+  rejects date ranges. Crosstown games appear once, from the home club’s view.
+  Unavailable leagues are identified instead of being reported as idle.
+- **Schedule filters** combine opponent, home/away/neutral site, weekday/weekend,
+  and upcoming/completed status. **Export to calendar** downloads the filtered
+  games as an `.ics` file; individual games also have calendar buttons. These are
+  one-time downloads, not subscriptions. Unknown times and postponed/cancelled
+  games are omitted, and no guessed end time is added.
+- **Heatmap** displays the selected season as keyboard-accessible outcome tiles,
+  grouped by month. Select a tile to open its game, boxscore and ticket controls.
+- **Rivalries** shows regular-season head-to-head records, scoring differential,
+  biggest win and next matchup. The baseball clubs default to the Crosstown series.
+- **Showdown** compares two regular seasons at the same number of completed,
+  scored games. A slider updates records, scoring, home/away splits and the
+  cumulative-win chart. Player leaders use full-season figures and are labeled
+  separately. Unsupported historical leaders are withheld. Hockey W–L records
+  include overtime and shootout losses; they are not standings-points records.
+- **My Games** collects pixel tickets for games attended or watched, with editable
+  memories, team/experience filters and personal records. Unfinished saved results
+  refresh when the collection is opened, with a manual refresh button as well.
+- **Spoiler-free mode** persists on the device and hides scores, team-card records,
+  heatmap colors, ticket memories, aggregate results, standings and statistics.
+  Each game or aggregate panel can be explicitly revealed. Enabling the mode
+  again clears prior reveals; reveals do not survive a page reload.
+- **Daily Arcade** offers one four-choice question per Chicago calendar day from
+  the team/venue catalog. The first answer counts; wins on consecutive days earn
+  a streak and badges. Answers, tickets and preferences are stored under
+  `cs.fan.v1` in localStorage, with no account or server storage. Clearing browser
+  storage clears the collection and progress. Storage failures are shown in the UI.
+
+All new views support the existing URL format, for example `?tab=tonight`,
+`?team=cubs&season=2016&tab=heatmap`, and `?tab=mygames`. Filters and secondary
+comparison selections are local to their view. The shared game view refreshes
+live boxscores and wakes when an upcoming game is due to start.
+
+Feature logic tests run with `npm test`; browser flows run with `npm run test:browser`. The
+trimmed public response fixtures are in `test/`; they are not bundled into the site.

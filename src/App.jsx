@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getTeam } from './api.js'
 import { TEAMS, accentFor, teamByKey } from './teams.js'
 import { clampSeason, seasonLabel, seasonOptions } from './seasons.js'
-import { TABS } from './tabs.js'
+import { TABS, GLOBAL_TABS } from './tabs.js'
 import { coverageNote } from './coverage.js'
 import { DEFAULT_TEAM, resolveState } from './urlState.js'
 import { useUrlSync } from './useUrlSync.js'
@@ -19,6 +19,14 @@ import { Archive } from './components/Archive.jsx'
 import { TodayBoard } from './components/TodayBoard.jsx'
 import { canonicalState } from './meta.js'
 import { scoreboardDestination } from './gameDay.js'
+
+import { Tonight } from './components/Tonight.jsx'
+import { MyGames } from './components/MyGames.jsx'
+import { Arcade } from './components/Arcade.jsx'
+import { Rivalry } from './components/Rivalry.jsx'
+import { Showdown } from './components/Showdown.jsx'
+import { SeasonHeatmap } from './components/SeasonHeatmap.jsx'
+import { useFan, SpoilerGate } from './FanContext.jsx'
 
 const store = {
   get(key, fallback) {
@@ -38,6 +46,7 @@ const store = {
 }
 
 export default function App() {
+  const fan = useFan()
   // Resolved once, before any state exists, so a deep link paints straight away
   // rather than flashing the default view. See urlState.js for why
   // `includeOlder` is derived from the season rather than taken at face value —
@@ -178,6 +187,7 @@ export default function App() {
   const accent = accentFor(team)
   const archiveCoverage = coverageNote(team, season)
   const teamOverview = overviewState.data?.[team.key]
+  const globalTab = GLOBAL_TABS.find((entry) => entry.id === tab)
 
   useEffect(() => {
     const meta = canonicalState({ team, season, tab, archiveView, seasonType, gameId, includeOlder }, window.location.origin)
@@ -205,17 +215,24 @@ export default function App() {
           </div>
         </div>
         <p>Scores, schedules, rosters, and history for the city&apos;s five major clubs.</p>
+        <label className="spoiler-switch"><input type="checkbox" checked={fan.spoiler} onChange={(e) => fan.setSpoiler(e.target.checked)} />Spoiler-free {fan.spoiler ? 'on' : 'off'}</label>
       </header>
+
+      <nav className="hub-nav" aria-label="Explore Chicago Sports">
+        <button aria-pressed={!globalTab} onClick={() => selectTab('schedule')}>Clubhouse</button>
+        {GLOBAL_TABS.map((entry) => <button key={entry.id} aria-pressed={tab === entry.id} onClick={() => selectTab(entry.id)}>{entry.label}{entry.id === 'mygames' ? <span className="nav-count">{Object.keys(fan.tickets).length}</span> : null}</button>)}
+      </nav>
+      {fan.storageError ? <div className="note" role="status">Device storage is unavailable. Tickets, trivia progress and preferences will last only for this visit.</div> : null}
 
       <TodayBoard onSelect={selectGame} />
 
       <TeamPicker
-        selected={team.key}
-        onSelect={selectTeam}
+        selected={globalTab ? null : team.key}
+        onSelect={(key) => { selectTeam(key); if (globalTab) selectTab('schedule') }}
         overview={overviewState.data}
       />
 
-      <section className="team-dashboard" aria-label={`${team.name} season controls`}>
+      {!globalTab ? <section className="team-dashboard" aria-label={`${team.name} season controls`}>
         <div className="team-identity">
           <div className="team-crest" aria-hidden="true">
             {teamOverview?.logo ? <img src={teamOverview.logo} alt="" /> : team.abbr}
@@ -230,11 +247,11 @@ export default function App() {
         <div className="team-glance">
           <div>
             <span>Club snapshot</span>
-            <strong>{teamOverview?.record ?? 'Loading current record…'}</strong>
+            <strong>{fan.spoiler ? 'Record hidden' : teamOverview?.record ?? 'Loading current record…'}</strong>
           </div>
           <div>
             <span>Next up</span>
-            <strong>{teamOverview?.next ?? 'Schedule updating…'}</strong>
+            <strong>{fan.spoiler ? teamOverview?.safeNext ?? 'Schedule updating…' : teamOverview?.next ?? 'Schedule updating…'}</strong>
           </div>
         </div>
 
@@ -272,9 +289,9 @@ export default function App() {
             <strong>{archiveCoverage.label}</strong> {archiveCoverage.detail}
           </div>
         ) : null}
-      </section>
+      </section> : null}
 
-      <div className="tabs" role="tablist">
+      {!globalTab ? <div className="tabs" role="tablist" aria-label="Team views">
         {TABS.map((t, index) => (
           <button
             key={t.id}
@@ -291,13 +308,19 @@ export default function App() {
             <span className="tab-label-short" aria-hidden="true">{t.shortLabel}</span>
           </button>
         ))}
-      </div>
+      </div> : null}
 
       <main id="main-content">
-        <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} tabIndex={-1}>
+        <div id={`panel-${tab}`} role={globalTab ? undefined : 'tabpanel'} aria-labelledby={globalTab ? undefined : `tab-${tab}`} tabIndex={-1}>
+        {tab === 'tonight' && <Tonight />}
+        {tab === 'mygames' && <MyGames onBrowse={() => selectTab('schedule')} />}
+        {tab === 'arcade' && <Arcade />}
+        {tab === 'heatmap' && <SeasonHeatmap key={team.key + season} team={team} season={season} heatmap />}
+        {tab === 'rivalry' && <Rivalry key={team.key + season} team={team} season={season} />}
+        {tab === 'showdown' && <Showdown key={team.key + season} team={team} season={season} />}
         {/* Keyed so switching team or season remounts panels with clean state. */}
         {tab === 'archive' && (
-          <Archive key={`arc-${team.key}-${season}`} team={team} season={season} seasons={seasons} view={archiveView} onViewChange={setArchiveView} />
+          <SpoilerGate scope={`archive:${team.key}:${season}`} label="archive results"><Archive key={`arc-${team.key}-${season}`} team={team} season={season} seasons={seasons} view={archiveView} onViewChange={setArchiveView} /></SpoilerGate>
         )}
         {tab === 'schedule' && (
           <Schedule key={`sch-${team.key}-${season}-${seasonType}`} team={team} season={season} seasonType={seasonType} onSeasonTypeChange={selectSeasonType} gameId={gameId} onGameChange={setGameId} />
@@ -306,13 +329,13 @@ export default function App() {
           <Roster key={`ros-${team.key}-${season}`} team={team} season={season} onOpenPlayer={openPlayer} />
         )}
         {tab === 'players' && (
-          <Players key={`plr-${team.key}-${season}-${playerFocus ?? ''}`} team={team} season={season} focusName={playerFocus} />
+          <SpoilerGate scope={`players:${team.key}:${season}`} label="player stats"><Players key={`plr-${team.key}-${season}-${playerFocus ?? ''}`} team={team} season={season} focusName={playerFocus} /></SpoilerGate>
         )}
         {tab === 'stats' && (
-          <TeamStats key={`sta-${team.key}-${season}`} team={team} season={season} />
+          <SpoilerGate scope={`stats:${team.key}:${season}`} label="team stats"><TeamStats key={`sta-${team.key}-${season}`} team={team} season={season} /></SpoilerGate>
         )}
         {tab === 'standings' && (
-          <Standings key={`std-${team.key}-${season}`} team={team} season={season} />
+          <SpoilerGate scope={`standings:${team.key}:${season}`} label="standings"><Standings key={`std-${team.key}-${season}`} team={team} season={season} /></SpoilerGate>
         )}
         </div>
       </main>

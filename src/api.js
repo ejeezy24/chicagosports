@@ -265,8 +265,8 @@ export function getTeamStats(team, season, seasonType = 2) {
  * the attendance-and-officials footer. Same endpoint for every league, though
  * the shape inside differs — see `boxscore()` in espn.js.
  */
-export function getSummary(team, eventId) {
-  return request('site', `${leaguePath(team)}/summary`, { event: eventId })
+export function getSummary(team, eventId, { fresh } = {}) {
+  return request('site', `${leaguePath(team)}/summary`, { event: eventId }, { fresh })
 }
 
 /**

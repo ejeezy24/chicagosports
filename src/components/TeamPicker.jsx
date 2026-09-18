@@ -1,4 +1,5 @@
 import { TEAMS, accentFor } from '../teams.js'
+import { useFan } from '../FanContext.jsx'
 import { formatDate, formatTime } from '../format.js'
 
 /**
@@ -6,6 +7,7 @@ import { formatDate, formatTime } from '../format.js'
  * the team's live record and next game, pulled from the team endpoint.
  */
 export function TeamPicker({ selected, onSelect, overview }) {
+  const fan = useFan()
   return (
     <nav className="teams" aria-label="Chicago teams">
       {TEAMS.map((team) => {
@@ -27,8 +29,8 @@ export function TeamPicker({ selected, onSelect, overview }) {
             </div>
             {/* Fall back to something stable so a failed overview fetch leaves
                 a labelled card rather than an empty box. */}
-            <div className="tc-meta">{info?.record ?? team.venue}</div>
-            <div className="tc-next">{info?.next ?? ' '}</div>
+            <div className="tc-meta">{fan.spoiler ? 'Record hidden' : info?.record ?? team.venue}</div>
+            <div className="tc-next">{fan.spoiler ? info?.safeNext ?? team.venue : info?.next ?? ' '}</div>
           </button>
         )
       })}
@@ -69,6 +71,7 @@ export function summarizeTeam(payload) {
   return {
     // Drives whether the header strip keeps polling; the display string alone
     // would mean parsing text back out to know.
+    safeNext: event ? `${formatDate(event.date)} · ${formatTime(event.date)}` : null,
     live: event?.competitions?.[0]?.status?.type?.state === 'in',
     logo: team.logos?.[0]?.href ?? null,
     record: record?.summary

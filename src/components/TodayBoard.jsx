@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useFan } from '../FanContext.jsx'
 import { getScoreboard } from '../api.js'
 import { TEAMS, accentFor } from '../teams.js'
 import { cityScoreboardRows, mergeScoreboardRows, scoreboardCache, scoreboardDateKey } from '../today.js'
@@ -8,6 +9,7 @@ import { useLivePoll } from '../useLivePoll.js'
 const DAYS = [{ offset: -1, label: 'Yesterday' }, { offset: 0, label: 'Today' }, { offset: 1, label: 'Tomorrow' }]
 
 export function TodayBoard({ onSelect }) {
+  const fan = useFan()
   const [offset, setOffset] = useState(0)
   const dateKey = scoreboardDateKey(new Date(), offset)
   const cached = useMemo(() => scoreboardCache.read(globalThis.localStorage, dateKey), [dateKey])
@@ -60,7 +62,7 @@ export function TodayBoard({ onSelect }) {
             <span className={row.live ? 'is-live' : ''}>{row.status}</span>
             <strong>{row.team}</strong>
             <em>{row.detail}</em>
-            {row.score ? <b>{row.score}</b> : null}
+            {row.score ? <b>{fan.spoiler ? 'Score hidden' : row.score}</b> : null}
           </button>
         )) : <p className="today-empty">{state.loading ? 'The city scoreboard is updating.' : `No Chicago games ${DAYS.find((day) => day.offset === offset)?.label.toLowerCase()}.`}</p>}
       </div>

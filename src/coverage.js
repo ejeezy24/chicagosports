@@ -35,3 +35,7 @@ export function coverageNote(team, season, now) {
     detail: `Schedules, scores, and standings are available. ${source.team ?? 'Team stats: league archive.'} ${source.roster} ${players}`,
   }
 }
+
+const SCHEDULE_FROM = { mlb: 1993, nba: 1993, nhl: 1994 }
+export const scheduleFloor = (team) => SCHEDULE_FROM[team.league] ?? team.oldestSeason
+export const isPartialSchedule = (team, season) => Number(season) < scheduleFloor(team)

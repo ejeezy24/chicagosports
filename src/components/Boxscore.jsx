@@ -1,5 +1,6 @@
 import { getSummary } from '../api.js'
 import { boxscore } from '../espn.js'
+import { useLivePoll } from '../useLivePoll.js'
 import { useAsync } from '../useAsync.js'
 import { Async } from './ui.jsx'
 
@@ -10,8 +11,9 @@ import { Async } from './ui.jsx'
  * Fetched only when a row is expanded — a season is 160-odd games and nobody
  * needs 160 summaries to read a schedule.
  */
-export function Boxscore({ team, eventId }) {
-  const state = useAsync(() => getSummary(team, eventId), [team.key, eventId])
+export function Boxscore({ team, eventId, live = false }) {
+  const state = useAsync(({ fresh }) => getSummary(team, eventId, { fresh }), [team.key, eventId])
+  useLivePoll(state.refresh, live)
 
   return (
     <div className="boxscore">

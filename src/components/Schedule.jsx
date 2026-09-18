@@ -8,6 +8,13 @@ import { useLivePoll } from '../useLivePoll.js'
 import { calendarSchedule, downloadCalendar, downloadSchedule, groupedMonths, initialOpenMonths, reconcileOpenMonths } from '../scheduleTools.js'
 import { gameLink } from '../urlState.js'
 import { copyText } from '../share.js'
+import { useFan, SpoilerGate } from '../FanContext.jsx'
+import { filterGames, gameKey } from '../fan.js'
+import { isPartialSchedule } from '../coverage.js'
+import { calendarGames, downloadCalendar as exportCalendar } from '../calendar.js'
+import { useGameStart } from '../useSchedule.js'
+import { TicketEditor } from './GameCard.jsx'
+import { ScheduleFilters, DEFAULT_FILTERS } from './ScheduleFilters.jsx'
 import { previewDetails } from '../gameDay.js'
 import { Async, Panel } from './ui.jsx'
 import { Boxscore } from './Boxscore.jsx'
@@ -21,7 +28,7 @@ export function Schedule({ team, season, seasonType, onSeasonTypeChange, gameId,
     () => Number(season) === Number(currentSeasonFor(team)),
   )
   const state = useAsync(
-    () => getSchedule(team, season, seasonType),
+    ({ fresh }) => getSchedule(team, season, seasonType, { fresh }),
     [team.key, season, seasonType],
   )
 
@@ -49,13 +56,18 @@ export function Schedule({ team, season, seasonType, onSeasonTypeChange, gameId,
     () => withLiveScores(scheduled, scoreboardScores(live.data)),
     [scheduled, live.data],
   )
+  useGameStart(state.refresh, withScores)
+  const [filters, setFilters] = useState(DEFAULT_FILTERS)
+  const filtered = useMemo(() => filterGames(withScores, filters), [withScores, filters])
+  const exportable = calendarGames(filtered)
+  const partial = isPartialSchedule(team, season)
   const hasUpcomingCalendar = useMemo(() => Boolean(calendarSchedule(withScores, team)), [team, withScores])
 
   // Chronological reads like a fixture list; newest-first answers "what just
   // happened?", which is what you want mid-season.
   const games = useMemo(
-    () => (newestFirst ? [...withScores].reverse() : withScores),
-    [withScores, newestFirst],
+    () => (newestFirst ? [...filtered].reverse() : filtered),
+    [filtered, newestFirst],
   )
   const monthGroups = useMemo(() => groupedMonths(games), [games])
   const [openMonths, setOpenMonths] = useState(new Set())
@@ -65,8 +77,8 @@ export function Schedule({ team, season, seasonType, onSeasonTypeChange, gameId,
     if (previousStructure.current === monthStructure) return
     const firstLoad = previousStructure.current === null
     previousStructure.current = monthStructure
-    setOpenMonths((current) => firstLoad ? initialOpenMonths(monthGroups, new Date(), gameId) : reconcileOpenMonths(current, monthGroups))
-  }, [gameId, monthGroups, monthStructure])
+    setOpenMonths((current) => firstLoad || filters !== DEFAULT_FILTERS ? initialOpenMonths(monthGroups, new Date(), gameId) : reconcileOpenMonths(current, monthGroups))
+  }, [gameId, monthGroups, monthStructure, filters])
 
   useEffect(() => {
     if (!gameId) return
@@ -137,7 +149,7 @@ export function Schedule({ team, season, seasonType, onSeasonTypeChange, gameId,
       <Async
         state={state}
         what="the schedule"
-        isEmpty={() => games.length === 0}
+        isEmpty={() => withScores.length === 0}
         empty={`No ${types.find((t) => t.id === seasonType)?.label.toLowerCase()} games published for ${seasonLabel(team, season)}.`}
       >
         {() => {
@@ -157,15 +169,20 @@ export function Schedule({ team, season, seasonType, onSeasonTypeChange, gameId,
 
           return (
             <>
+              <ScheduleFilters games={withScores} filters={filters} setFilters={setFilters} />
+              <div className="list-toolbar"><span role="status">{games.length} of {withScores.length} games</span><button className="pixel-button" disabled={!exportable.length} onClick={() => exportCalendar(team, filtered)}>Export {exportable.length} to calendar</button></div>
+              <p className="micro-note">Calendar downloads include known start times; TBD, postponed and cancelled games are omitted. Downloads do not update automatically.</p>
+              {!games.length ? <div className="state">No games match these filters. Try another opponent or clear the filters.</div> : null}
+              {partial ? <p className="note">Partial archive: season totals are unavailable.</p> : null}
               {state.data?.source ? (
                 <div className="schedule-source">
                   Verified historical scores from <a href={state.data.sourceUrl} target="_blank" rel="noreferrer">{state.data.source}</a>. ESPN remains the source for current schedules and game files.
                 </div>
               ) : null}
-              <div className="summary">
+              <SpoilerGate scope={`summary:${team.key}:${season}:${seasonType}`} label="season totals"><div className="summary">
                 <div>
                   <span>Record</span>
-                  <strong>{record.played ? record.text : '—'}</strong>
+                  <strong>{!partial && record.played ? record.text : '—'}</strong>
                 </div>
                 <div>
                   <span>Games</span>
@@ -173,13 +190,13 @@ export function Schedule({ team, season, seasonType, onSeasonTypeChange, gameId,
                 </div>
                 <div>
                   <span>Scored</span>
-                  <strong>{record.played ? scored.for : '—'}</strong>
+                  <strong>{!partial && record.played ? scored.for : '—'}</strong>
                 </div>
                 <div>
                   <span>Allowed</span>
-                  <strong>{record.played ? scored.against : '—'}</strong>
+                  <strong>{!partial && record.played ? scored.against : '—'}</strong>
                 </div>
-              </div>
+              </div></SpoilerGate>
 
               {monthGroups.map((group) => {
                 const open = openMonths.has(group.label)
@@ -213,6 +230,10 @@ export function Schedule({ team, season, seasonType, onSeasonTypeChange, gameId,
  * played re-renders.
  */
 const GameRow = memo(function GameRow({ game, team, selected, onGameChange }) {
+  const fan = useFan()
+  const ticketKey = gameKey(team, game)
+  const visible = fan.visible(ticketKey)
+  const [editing, setEditing] = useState(false)
   const panelId = useId()
   const [copyStatus, setCopyStatus] = useState('idle')
   const copyRequest = useRef(0)
@@ -246,7 +267,7 @@ const GameRow = memo(function GameRow({ game, team, selected, onGameChange }) {
   // hover card; away grounds fall back to plain text inside <Venue>.
   const sub = [
     game.week ? `Week ${game.week}` : null,
-    game.note,
+    visible ? game.note : null,
     game.venue ? <Venue key="venue" name={game.venue} /> : null,
     game.broadcast,
   ].filter(Boolean)
@@ -283,7 +304,9 @@ const GameRow = memo(function GameRow({ game, team, selected, onGameChange }) {
       </div>
 
       <div className="g-result">
-        {game.state === 'in' ? (
+        {!visible && (game.completed || game.state === 'in') ? (
+          <button className="pixel-button" onClick={() => fan.reveal(ticketKey)}>Reveal score</button>
+        ) : game.state === 'in' ? (
           <>
             <span className="livedot">● {game.detail ?? 'Live'}</span>
             <span className="score">
@@ -322,7 +345,7 @@ const GameRow = memo(function GameRow({ game, team, selected, onGameChange }) {
           className="g-toggle"
           aria-expanded={open}
           aria-controls={panelId}
-          onClick={() => onGameChange(open ? null : String(game.id))}
+          onClick={() => { if (!open) fan.reveal(ticketKey); onGameChange(open ? null : String(game.id)) }}
         >
           <span aria-hidden="true">{open ? '−' : '+'}</span>
           <span className="sr-only">
@@ -334,6 +357,8 @@ const GameRow = memo(function GameRow({ game, team, selected, onGameChange }) {
       )}
     </div>
 
+    <div className="game-actions schedule-ticket-actions"><button className="text-button" aria-expanded={editing} onClick={() => setEditing((value) => !value)}>{fan.tickets[ticketKey] ? '★ Edit ticket' : '+ Collect ticket'}</button></div>
+    {editing ? <TicketEditor team={team} game={game} onClose={() => setEditing(false)} /> : null}
     {open ? (
       <div id={panelId}>
         <div className="game-detail-tools">
@@ -342,7 +367,7 @@ const GameRow = memo(function GameRow({ game, team, selected, onGameChange }) {
             {copied ? '✓ Copied' : copyStatus === 'manual' ? 'Copy shown' : copyStatus === 'failed' ? 'Try again' : '↗ Copy link'}
           </button>
         </div>
-        {hasBoxscore ? <Boxscore team={team} eventId={game.id} /> : (
+        {hasBoxscore ? <SpoilerGate scope={ticketKey} label="boxscore"><Boxscore team={team} eventId={game.id} live={game.state === 'in'} /></SpoilerGate> : (
           <section className="game-preview" aria-label="Game preview">
             <h3>{preview.matchup}</h3>
             <p>{preview.dateTime} · Chicago time</p>
