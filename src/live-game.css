@@ -6,6 +6,7 @@
 .is-live .live-status { color: #ffb347; }
 .live-period, .live-clock { color: #fff; }
 .live-refresh { margin-left: auto; color: inherit; }
+.live-scoreboard .text-button { color: inherit; }
 .live-score-teams { display: grid; gap: 8px; padding-top: 12px; }
 .live-team { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 8px; font-size: 1.1em; }
 .live-team img { width: 24px; height: 24px; object-fit: contain; }

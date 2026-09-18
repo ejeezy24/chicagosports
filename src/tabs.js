@@ -3,6 +3,8 @@
 export const TABS = [
   { id: 'schedule', label: 'Schedule & scores', shortLabel: 'Scores' },
   { id: 'greatgames', label: 'Game finder', shortLabel: 'Finder' },
+  { id: 'news', label: 'Team news', shortLabel: 'News' },
+  { id: 'lineup', label: 'All-time lineup', shortLabel: 'Lineup' },
   { id: 'playoffrace', label: 'Playoff race', shortLabel: 'Race' },
   { id: 'heatmap', label: 'Heatmap', shortLabel: 'Heatmap' },
   { id: 'rivalry', label: 'Rivalries', shortLabel: 'Rivalries' },
@@ -20,5 +22,7 @@ export const GLOBAL_TABS = [
   { id: 'tonight', label: 'Chicago Tonight' },
   { id: 'mygames', label: 'My Games' },
   { id: 'arcade', label: 'Daily Arcade' },
+  { id: 'timemachine', label: 'Time Machine' },
+  { id: 'stadiums', label: 'Stadium Explorer' },
 ]
 export const isTab = (id) => [...TABS, ...GLOBAL_TABS].some((t) => t.id === id)

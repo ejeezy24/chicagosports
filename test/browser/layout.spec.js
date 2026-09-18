@@ -35,7 +35,7 @@ for (const [width, mainLimit, gameLimit] of [[1440, 450, 750], [390, 600, 950], 
     expect(dimensions.width).toBe(width)
     expect(dimensions.nav).toBeLessThan(75)
     expect(dimensions.bodyFont).toContain('Segoe UI')
-    await expect(page.getByRole('tab')).toHaveCount(11)
+    await expect(page.getByRole('tab')).toHaveCount(13)
     const scoresFit = await page.locator('.today-games button').evaluateAll(cards => cards.every(card => {
       const bounds = card.getBoundingClientRect()
       return [...card.children].every(child => { const box = child.getBoundingClientRect(); return box.top >= bounds.top && box.bottom <= bounds.bottom })

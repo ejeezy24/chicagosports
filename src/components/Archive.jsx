@@ -15,6 +15,7 @@ import { seasonLabel } from '../seasons.js'
 import { teamByKey } from '../teams.js'
 import { useAsync } from '../useAsync.js'
 import { Async, Panel } from './ui.jsx'
+import { VideoLinks } from './VideoLinks.jsx'
 
 const VIEWS = [
   ['story', 'Season story'],
@@ -306,7 +307,7 @@ function HistoryView({ team, toggleFavorite, favorites }) {
           return (
             <article key={moment.date}>
               <time>{longDate(moment.date)}</time>
-              <div><h4>{moment.title}</h4><p>{moment.detail}</p></div>
+                <div><h4>{moment.title}</h4><p>{moment.detail}</p><VideoLinks team={team} moment={moment} /></div>
               <FavoriteButton entry={entry} favorites={favorites} toggle={toggleFavorite} />
             </article>
           )

@@ -174,6 +174,11 @@ export function getTeam(team, { fresh } = {}) {
   return request('site', `${leaguePath(team)}/teams/${team.espnId}`, undefined, { fresh })
 }
 
+/** Current reporting is independent of the season selected in the archive. */
+export function getNews(team, { fresh } = {}) {
+  return request('site', `${leaguePath(team)}/news`, { team: team.espnId, limit: 30 }, { fresh })
+}
+
 /**
  * Today's games across a league, with live scores.
  *

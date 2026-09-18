@@ -30,6 +30,10 @@ import { Showdown } from './components/Showdown.jsx'
 import { SeasonHeatmap } from './components/SeasonHeatmap.jsx'
 import { useFan, SpoilerGate } from './FanContext.jsx'
 import { useInteractionMotion } from './useInteractionMotion.js'
+import { News } from './components/News.jsx'
+import { LineupBuilder } from './components/LineupBuilder.jsx'
+import { TimeMachine } from './components/TimeMachine.jsx'
+import { StadiumMap } from './components/StadiumMap.jsx'
 
 
 const store = {
@@ -246,7 +250,7 @@ export default function App() {
 
       <nav className="hub-nav" aria-label="Explore Chicago Sports">
         <button aria-pressed={!globalTab} onClick={() => selectTab('schedule')}>Clubhouse</button>
-        {GLOBAL_TABS.map((entry) => <button key={entry.id} aria-label={entry.label} aria-describedby={entry.id === 'mygames' ? 'ticket-count' : undefined} aria-pressed={tab === entry.id} onClick={() => selectTab(entry.id)}><span className="nav-label-short">{entry.id === 'tonight' ? 'Tonight' : entry.id === 'mygames' ? 'My Games' : 'Arcade'}</span>{entry.id === 'mygames' ? <><span className="nav-count" aria-hidden="true">{Object.keys(fan.tickets).length}</span><span id="ticket-count" className="sr-only">{Object.keys(fan.tickets).length} saved tickets</span></> : null}</button>)}
+        {GLOBAL_TABS.map((entry) => <button key={entry.id} aria-label={entry.label} aria-describedby={entry.id === 'mygames' ? 'ticket-count' : undefined} aria-pressed={tab === entry.id} onClick={() => selectTab(entry.id)}><span className="nav-label-short">{entry.id === 'tonight' ? 'Tonight' : entry.id === 'mygames' ? 'My Games' : entry.id === 'arcade' ? 'Arcade' : entry.id === 'stadiums' ? 'Stadiums' : entry.label}</span>{entry.id === 'mygames' ? <><span className="nav-count" aria-hidden="true">{Object.keys(fan.tickets).length}</span><span id="ticket-count" className="sr-only">{Object.keys(fan.tickets).length} saved tickets</span></> : null}</button>)}
       </nav>
       {fan.storageError ? <div className="note" role="status">Device storage is unavailable. Tickets, trivia progress and preferences will last only for this visit.</div> : null}
 
@@ -337,6 +341,13 @@ export default function App() {
         {tab === 'tonight' && <Tonight />}
         {tab === 'mygames' && <MyGames onBrowse={() => selectTab('schedule')} />}
         {tab === 'arcade' && <Arcade />}
+        {tab === 'news' && <News key={team.key} team={team} />}
+        {tab === 'lineup' && <LineupBuilder key={team.key} team={team} />}
+        {tab === 'timemachine' && <TimeMachine onExplore={(nextTeam, nextSeason) => {
+          restore(resolveState(`?team=${nextTeam}&season=${nextSeason}&tab=archive`, nextTeam))
+          scrollToPanel('archive')
+        }} />}
+        {tab === 'stadiums' && <StadiumMap team={team} />}
         {tab === 'heatmap' && <SeasonHeatmap key={team.key + season} team={team} season={season} heatmap />}
         {tab === 'rivalry' && <Rivalry key={team.key + season} team={team} season={season} />}
         {tab === 'showdown' && <Showdown key={team.key + season} team={team} season={season} />}

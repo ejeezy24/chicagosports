@@ -1,0 +1,17 @@
+.lineup-builder { padding: 14px 16px 18px; }
+.lineup-actions, .lineup-add { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; margin-bottom: 14px; }
+.lineup-actions span { color: var(--muted); font-size: .8rem; }
+.lineup-add label { display: grid; gap: 5px; min-width: 150px; color: var(--muted); font-size: .78rem; }
+.lineup-add select, .lineup-add input { min-height: 44px; width: 100%; padding: 8px 10px; font: 16px var(--font-body); }
+.lineup-slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.lineup-slot { min-height: 90px; padding: 10px; border: 1px dashed var(--rule); background: var(--panel); }
+.lineup-slot.filled { border-style: solid; border-color: var(--lineup-accent, var(--team)); }
+.lineup-slot-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--lineup-accent, var(--team)); }
+.lineup-slot-head .text-button { min-height: 36px; font-size: .78rem; }
+.lineup-player { display: grid; gap: 3px; margin-top: 8px; cursor: grab; }
+.lineup-player small, .lineup-player a, .lineup-source { font-size: .78rem; color: var(--muted); }
+.lineup-empty { display: block; margin-top: 15px; color: var(--muted); font-size: .8rem; }
+.lineup-source { margin: 16px 0 0; }
+@media (min-width: 760px) { .lineup-slots { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .lineup-builder { padding-inline: 12px; } .lineup-add label { flex: 1 1 145px; } .lineup-add button { flex: 1 1 100%; } }
+.legend-pool { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:16px 0; }.legend-pool button { display:grid; gap:6px; padding:14px; border:1px solid var(--team); background:color-mix(in srgb,var(--team) 5%,var(--panel)); border-radius:5px; text-align:left; cursor:grab; min-width:0; overflow-wrap:anywhere; }.legend-pool button[aria-pressed=true] { outline:2px solid var(--team); }.legend-pool small { font-size:11px; color:var(--muted); }.lineup-move { display:grid; gap:4px; font-size:12px; margin-top:6px; }.lineup-move select { width:100%; }.lineup-player { overflow-wrap:anywhere; }.lineup-slot { min-width:0; }.lineup-source { overflow-wrap:anywhere; }@media(max-width:600px) { .legend-pool { grid-template-columns:repeat(2,minmax(0,1fr)); }.lineup-slots { grid-template-columns:1fr; } }

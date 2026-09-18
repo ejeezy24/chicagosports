@@ -1,0 +1,9 @@
+.video-links { font-size: .75rem; min-width: 0; }
+.video-links summary { cursor: pointer; color: var(--text); padding: .4rem 0; width: fit-content; }
+.video-links summary:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
+.video-links[open] { flex-basis: 100%; }
+.video-links-content { padding: .5rem .7rem; border-left: 2px solid var(--team); background: color-mix(in srgb, var(--team) 5%, transparent); }
+.video-links-content > div { display: flex; flex-wrap: wrap; gap: .6rem 1.2rem; margin-bottom: .4rem; }
+.video-links-content a { color: var(--team); text-underline-offset: 3px; overflow-wrap: anywhere; }
+.video-links-content a:hover { color: var(--text); }
+.video-links-content small { display: block; color: var(--muted, #a5afc1); line-height: 1.5; }

@@ -19,6 +19,8 @@ import { previewDetails } from '../gameDay.js'
 import { Async, Panel } from './ui.jsx'
 import { LiveGameCenter } from './LiveGameCenter.jsx'
 import { Venue } from './Venue.jsx'
+import { GamePoster } from './GamePoster.jsx'
+import { VideoLinks } from './VideoLinks.jsx'
 
 export function Schedule({ team, season, seasonType, onSeasonTypeChange, gameId, onGameChange }) {
   // A current-season visitor normally wants the latest result or next fixture,
@@ -240,6 +242,8 @@ const GameRow = memo(function GameRow({ game, team, selected, onGameChange }) {
   const ticketKey = gameKey(team, game)
   const visible = fan.visible(ticketKey)
   const [editing, setEditing] = useState(false)
+  const [replaying, setReplaying] = useState(false)
+  const [poster, setPoster] = useState(false)
   const panelId = useId()
   const [copyStatus, setCopyStatus] = useState('idle')
   const copyRequest = useRef(0)
@@ -363,9 +367,15 @@ const GameRow = memo(function GameRow({ game, team, selected, onGameChange }) {
       )}
     </div>
 
-    <div className="game-actions schedule-ticket-actions"><button className="text-button" aria-expanded={editing} onClick={() => setEditing((value) => !value)}>{fan.tickets[ticketKey] ? '★ Edit ticket' : '+ Collect ticket'}</button></div>
+    <div className="game-actions schedule-ticket-actions"><button className="text-button" aria-expanded={editing} onClick={() => setEditing((value) => !value)}>{fan.tickets[ticketKey] ? '★ Edit ticket' : '+ Collect ticket'}</button>
+      <button className="text-button" onClick={() => setPoster(true)}>Make poster</button>
+      {game.completed && hasBoxscore ? <button className="text-button" onClick={() => setReplaying(true)}>Relive game</button> : null}
+      <VideoLinks team={team} game={game} />
+    </div>
+    {poster ? <GamePoster team={team} game={game} onClose={() => setPoster(false)} /> : null}
+    {replaying ? <LiveGameCenter key={`replay-${game.id}`} team={team} eventId={game.id} initialMode="replay" onClose={() => setReplaying(false)} /> : null}
     {editing ? <TicketEditor team={team} game={game} onClose={() => setEditing(false)} /> : null}
-    {open ? (
+    {open && !replaying ? (
       <div id={panelId} className="game-detail-reveal">
         <div className="game-detail-tools">
           <span>Shareable game details</span>

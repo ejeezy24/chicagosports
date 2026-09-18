@@ -66,7 +66,7 @@ function normalizePlays(rows, sport) {
     const id = String(play.id ?? `${index}-${text}`)
     if (seen.has(id)) return []
     seen.add(id)
-    return [{ id, text, scoring: play.scoringPlay === true, period: periodLabel(play.period, sport), clock: textOf(play.clock) }]
+    return [{ id, text, scoring: play.scoringPlay === true, period: periodLabel(play.period, sport), clock: textOf(play.clock), homeScore: scoreValue(play.homeScore), awayScore: scoreValue(play.awayScore) }]
   })
 }
 export function normalizeLiveGame(payload, team) {
@@ -81,6 +81,19 @@ export function normalizeLiveGame(payload, team) {
   const plays = normalizePlays(rawPlays(payload), team?.sport)
   const dedicated = normalizePlays(Array.isArray(payload?.scoringPlays) ? payload.scoringPlays : [], team?.sport)
   const scoringPlays = dedicated.length ? dedicated : plays.filter((play) => play.scoring)
+  const rawSituation = comp.situation ?? payload?.situation ?? null
+  const knownBase = (value) => typeof value === 'boolean' ? value : null
+  const situation = rawSituation ? {
+    balls: scoreValue(first(rawSituation.balls, rawSituation.ballCount)),
+    strikes: scoreValue(first(rawSituation.strikes, rawSituation.strikeCount)),
+    outs: scoreValue(first(rawSituation.outs, rawSituation.outCount)),
+    first: knownBase(rawSituation.onFirst ?? rawSituation.first),
+    second: knownBase(rawSituation.onSecond ?? rawSituation.second),
+    third: knownBase(rawSituation.onThird ?? rawSituation.third),
+    pitchCount: scoreValue(rawSituation.pitchCount ?? rawSituation.pitcher?.pitchCount),
+    pitcher: textOf(rawSituation.pitcher?.athlete?.displayName ?? rawSituation.pitcher?.displayName),
+    batter: textOf(rawSituation.batter?.athlete?.displayName ?? rawSituation.batter?.displayName),
+  } : null
   return {
     state: completed ? 'post' : ['in', 'status_in_progress'].includes(rawState) ? 'in' : rawState,
     completed,
@@ -92,11 +105,17 @@ export function normalizeLiveGame(payload, team) {
       name: first(item?.team?.displayName, item?.team?.shortDisplayName, item?.team?.abbreviation, 'Team'),
       abbr: item?.team?.abbreviation ?? '',
       logo: item?.team?.logo ?? item?.team?.logos?.[0]?.href ?? null,
-      score: textOf(item?.score) ?? '—', isUs: item === us, winner: item?.winner === true,
+      score: textOf(item?.score) ?? '—', homeAway: item.homeAway, isUs: item === us, winner: item?.winner === true,
     })),
     opponent: opponent ? first(opponent.team?.shortDisplayName, opponent.team?.displayName, opponent.team?.abbreviation) : null,
-    performers: extractPerformers(comp, payload), plays, scoringPlays,
+    performers: extractPerformers(comp, payload), plays, scoringPlays, situation,
     hasPlayData: plays.length > 0 || scoringPlays.length > 0,
   }
 }
 export const liveStateIsOngoing = (model) => Boolean(model && !model.completed && model.state === 'in')
+
+function scoreValue(value) {
+  if (value === null || value === undefined || value === '') return null
+  const number = Number(value)
+  return Number.isFinite(number) && number >= 0 ? number : null
+}

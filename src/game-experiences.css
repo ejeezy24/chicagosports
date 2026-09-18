@@ -1,0 +1,28 @@
+.experience-dialog { width:min(960px,calc(100% - 24px)); max-height:calc(100dvh - 24px); padding:0; border:1px solid #56647c; border-radius:12px; background:#101b2d; color:#f6f7fc; box-shadow:0 24px 90px #0008; }
+.experience-dialog::backdrop { background:#060b14d9; backdrop-filter:blur(5px); }
+.experience-dialog:fullscreen { width:100%; height:100%; max-height:none; border-radius:0; }
+.experience-toolbar { position:sticky; top:0; z-index:2; display:flex; align-items:center; gap:8px; padding:12px 18px; background:#15233a; border-bottom:1px solid #465166; }
+.experience-toolbar h2 { flex:1; margin:0; font:750 20px/1.2 var(--font-body); }
+.experience-dialog button { min-height:44px; padding:8px 12px; background:#263b59; border:1px solid #637695; color:#fff; border-radius:4px; }
+.experience-dialog :focus-visible { outline:3px solid #ffda78; outline-offset:2px; }
+.experience-dialog button:disabled { opacity:.4; cursor:default; }
+.ballpark-mode, .classic-replay { padding:24px; }
+.ballpark-status { display:flex; align-items:center; flex-wrap:wrap; gap:12px; color:#c2cde0; }
+.ballpark-status b { color:#ffda78; }.ballpark-status button { margin-left:auto; }
+.experience-score { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin:28px 0; }
+.experience-score > div { display:grid; gap:8px; padding:20px; background:linear-gradient(140deg,color-mix(in srgb,var(--team) 45%,#1c2a42),#1c2a42); border:1px solid #465166; border-radius:8px; text-align:center; }
+.experience-score span { font:650 16px/1.3 var(--font-body); }.experience-score strong { font:800 clamp(40px,8vw,80px)/1 var(--font-body); font-variant-numeric:tabular-nums; }
+.ballpark-field { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:center; padding:18px; background:radial-gradient(ellipse at bottom,#214438,#172c27); border-radius:10px; }
+.diamond { position:relative; width:220px; height:200px; margin:auto; }
+.diamond-infield { position:absolute; width:116px; height:116px; left:52px; top:36px; transform:rotate(45deg); background:#8b653c; border:2px solid #c5bc9c; }
+.diamond-base, .diamond-home { position:absolute; display:grid; place-items:center; width:30px; height:30px; border:2px solid #fff; background:#244435; color:#fff; font-size:12px; }
+.base-first { right:12px; top:79px; }.base-second { left:95px; top:0; }.base-third { left:12px; top:79px; }.diamond-home { left:95px; bottom:4px; }
+.diamond-base.occupied { background:#ffda78; color:#142035; box-shadow:0 0 24px #ffda7890; }.diamond-base.unknown { border-style:dashed; font-size:0; }.diamond-base.unknown::after { content:'?'; font-size:16px; }
+.baseball-situation { display:flex; flex-wrap:wrap; gap:18px; }.baseball-situation > div { display:grid; gap:5px; }.baseball-situation span { font-size:12px; color:#dae4e0; }.baseball-situation strong { font-size:28px; }.baseball-situation small { flex-basis:100%; color:#dae4e0; }.baseball-situation p { margin:0; flex-basis:100%; }
+.ballpark-plays { padding:0; list-style:none; }.ballpark-plays li { padding:14px 0; border-top:1px solid #465166; }.ballpark-plays small { display:block; color:#bdcce1; margin-bottom:4px; }
+.replay-label { color:#ffda78; }.replay-position, .experience-missing { color:#c2cde0; font-size:13px; }.replay-play { font:600 23px/1.5 var(--font-body); min-height:110px; }.classic-replay progress { width:100%; accent-color:#ffda78; }.replay-controls { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }.replay-controls label { display:flex; gap:8px; align-items:center; }
+.celebration-setting { display:flex; align-items:center; gap:8px; padding:8px 16px; font-size:12px; }
+.victory-celebration { position:relative; overflow:hidden; display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:22px; background:#153f2c; border:1px solid #78c89d; color:#fff; border-radius:6px; }.victory-celebration strong { font-size:24px; }.victory-celebration button { margin-left:auto; min-height:44px; }.victory-confetti { position:absolute; inset:0; pointer-events:none; }.victory-confetti i { position:absolute; left:calc(var(--i) * 4.2%); width:7px; height:12px; background:var(--color); }
+@media (prefers-reduced-motion:no-preference) { .victory-confetti i { animation:victory-fall 2.5s ease-out 2; animation-delay:calc(var(--i) * -80ms); } @keyframes victory-fall { from { transform:translateY(-20px) rotate(0); opacity:1; } to { transform:translateY(190px) rotate(280deg); opacity:0; } } .diamond-base { transition:background-color 250ms,box-shadow 250ms; } }
+@media (prefers-reduced-motion:reduce) { .victory-confetti { display:none; } }
+@media (max-width:600px) { .ballpark-mode,.classic-replay { padding:14px; }.experience-toolbar { padding:10px; flex-wrap:wrap; }.experience-toolbar h2 { flex-basis:100%; }.experience-score { gap:8px; }.experience-score > div { padding:14px 8px; }.ballpark-field { grid-template-columns:1fr; padding:12px; }.baseball-situation { justify-content:center; }.replay-play { font-size:19px; } }

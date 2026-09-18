@@ -5,6 +5,8 @@ import { calendarGames, downloadCalendar } from '../calendar.js'
 import { formatDate, formatTime, isSameDay } from '../format.js'
 import { LiveGameCenter } from './LiveGameCenter.jsx'
 import { Venue } from './Venue.jsx'
+import { GamePoster } from './GamePoster.jsx'
+import { VideoLinks } from './VideoLinks.jsx'
 
 export function GameCard({ game, team, defaultOpen = false, showTeam = false }) {
   const fan = useFan()
@@ -13,6 +15,8 @@ export function GameCard({ game, team, defaultOpen = false, showTeam = false }) 
   const ticket = fan.tickets[key]
   const [open, setOpen] = useState(defaultOpen)
   const [editing, setEditing] = useState(false)
+  const [replaying, setReplaying] = useState(false)
+  const [poster, setPoster] = useState(false)
   const panelId = useId()
   const canExpand = Boolean(game.id) && game.hasBoxscore !== false && (game.completed || game.state === 'in')
   const canCalendar = calendarGames([game]).length > 0
@@ -33,12 +37,17 @@ export function GameCard({ game, team, defaultOpen = false, showTeam = false }) 
       </div>
     </div>
     <div className="game-actions">
+      <button className="text-button" onClick={() => setPoster(true)}>Make poster</button>
+      {game.completed && canExpand ? <button className="text-button" onClick={() => setReplaying(true)}>Relive game</button> : null}
       <button className="text-button" aria-expanded={editing} onClick={() => setEditing((v) => !v)}>{ticket ? '★ Edit ticket' : '+ Collect ticket'}</button>
       {canCalendar ? <button className="text-button" onClick={() => downloadCalendar(team, [game])}>Add to calendar</button> : null}
       {canExpand ? <button className="text-button" aria-expanded={open && visible} aria-controls={panelId} onClick={() => { if (!visible) fan.reveal(key); setOpen((v) => !visible || !v) }}>{open && visible ? '− Hide' : '+ Show'} boxscore</button> : null}
+      <VideoLinks team={team} game={game} />
     </div>
     {editing ? <TicketEditor key={key} team={team} game={game} onClose={() => setEditing(false)} /> : null}
-    {canExpand && open && visible ? <div id={panelId} className="game-detail-reveal"><LiveGameCenter team={team} eventId={game.id} live={game.state === 'in'} /></div> : null}
+    {poster ? <GamePoster team={team} game={game} onClose={() => setPoster(false)} /> : null}
+    {replaying ? <LiveGameCenter key={`replay-${game.id}`} team={team} eventId={game.id} initialMode="replay" onClose={() => setReplaying(false)} /> : null}
+    {canExpand && open && visible && !replaying ? <div id={panelId} className="game-detail-reveal"><LiveGameCenter team={team} eventId={game.id} live={game.state === 'in'} /></div> : null}
   </article>
 }
 
