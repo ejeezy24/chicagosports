@@ -342,7 +342,7 @@ const GameRow = memo(function GameRow({ game, team, selected, onGameChange }) {
             {copied ? '✓ Copied' : copyStatus === 'manual' ? 'Copy shown' : copyStatus === 'failed' ? 'Try again' : '↗ Copy link'}
           </button>
         </div>
-        {hasBoxscore ? <Boxscore team={team} gameId={game.id} /> : (
+        {hasBoxscore ? <Boxscore team={team} eventId={game.id} /> : (
           <section className="game-preview" aria-label="Game preview">
             <h3>{preview.matchup}</h3>
             <p>{preview.dateTime} · Chicago time</p>
