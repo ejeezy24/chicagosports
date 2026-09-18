@@ -14,7 +14,7 @@ import { isPartialSchedule } from '../coverage.js'
 import { calendarGames, downloadCalendar as exportCalendar } from '../calendar.js'
 import { useGameStart } from '../useSchedule.js'
 import { TicketEditor } from './GameCard.jsx'
-import { ScheduleFilters, DEFAULT_FILTERS } from './ScheduleFilters.jsx'
+import { ScheduleFilters, DEFAULT_FILTERS, activeFilterCount } from './ScheduleFilters.jsx'
 import { previewDetails } from '../gameDay.js'
 import { Async, Panel } from './ui.jsx'
 import { LiveGameCenter } from './LiveGameCenter.jsx'
@@ -169,9 +169,15 @@ export function Schedule({ team, season, seasonType, onSeasonTypeChange, gameId,
 
           return (
             <>
-              <ScheduleFilters games={withScores} filters={filters} setFilters={setFilters} />
-              <div className="list-toolbar"><span role="status">{games.length} of {withScores.length} games</span><button className="pixel-button" disabled={!exportable.length} onClick={() => exportCalendar(team, filtered)}>Export {exportable.length} to calendar</button></div>
-              <p className="micro-note">Calendar downloads include known start times; TBD, postponed and cancelled games are omitted. Downloads do not update automatically.</p>
+              <details className="schedule-tools-disclosure">
+                <summary>Filters &amp; calendar{activeFilterCount(filters) ? <span className="filter-count">{activeFilterCount(filters)} active</span> : null}</summary>
+                <ScheduleFilters games={withScores} filters={filters} setFilters={setFilters} />
+                <div className="schedule-export-tools">
+                  <button className="pixel-button" disabled={!exportable.length} onClick={() => exportCalendar(team, filtered)}>Export {exportable.length} to calendar</button>
+                  <details className="schedule-calendar-help"><summary>Calendar export details</summary><p className="micro-note">Calendar downloads include known start times; TBD, postponed and cancelled games are omitted. Downloads do not update automatically.</p></details>
+                </div>
+              </details>
+              <div className="list-toolbar"><span role="status">{games.length} of {withScores.length} games</span></div>
               {!games.length ? <div className="state">No games match these filters. Try another opponent or clear the filters.</div> : null}
               {partial ? <p className="note">Partial archive: season totals are unavailable.</p> : null}
               {state.data?.source ? (
@@ -330,7 +336,7 @@ const GameRow = memo(function GameRow({ game, team, selected, onGameChange }) {
             <span className="upcoming">{preview?.status}</span>
             {canCalendar ? (
               <button className="calendar-button" onClick={() => downloadCalendar(game, team)} title="Download calendar event">
-                <span aria-hidden="true">＋</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M7 3v4M17 3v4M3 11h18M12 14v5M9.5 16.5h5" /></svg>
                 <span className="sr-only">Add {team.name} {game.home ? 'vs' : 'at'} {game.opponent.name} to calendar</span>
               </button>
             ) : null}

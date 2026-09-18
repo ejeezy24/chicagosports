@@ -59,6 +59,15 @@ test('final summary overrides live parent; play list expands and refresh errors 
  await expect(page.locator('.live-game-center')).toContainText('Showing the last successful update.')
  await expect(page.locator('.live-scoreboard')).toBeVisible()
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(390)
+ // A page can have no horizontal overflow yet still hide scores inside an
+ // oversized grid child. Check the actual game sections against their parent.
+ const sectionsFit = await page.locator('.live-game-center').evaluate(center => {
+  const bounds = center.getBoundingClientRect()
+  return [...center.children].every(child => { const box = child.getBoundingClientRect(); return box.left >= bounds.left && box.right <= bounds.right })
+ })
+ expect(sectionsFit).toBe(true)
+ const scoresFit = await page.locator('.live-team strong').evaluateAll(scores => scores.every(score => score.getBoundingClientRect().right <= document.querySelector('.live-game-center').getBoundingClientRect().right))
+ expect(scoresFit).toBe(true)
  await page.screenshot({path:testInfo.outputPath('game-center-mobile.png'),fullPage:true})
 })
 test('empty summary has an honest unavailable state',async({page})=>{

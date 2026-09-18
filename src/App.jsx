@@ -30,6 +30,7 @@ import { Showdown } from './components/Showdown.jsx'
 import { SeasonHeatmap } from './components/SeasonHeatmap.jsx'
 import { useFan, SpoilerGate } from './FanContext.jsx'
 
+
 const store = {
   get(key, fallback) {
     try {
@@ -90,6 +91,22 @@ export default function App() {
     setTab(nextTab)
     scrollToPanel(nextTab)
   }, [scrollToPanel])
+
+  // URL restores and browser back/forward can activate a tab without going
+  // through the click handler. Keep the tab strip itself in view while leaving
+  // the page's vertical scroll position alone.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const active = document.getElementById(`tab-${tab}`)
+      const strip = active?.parentElement
+      if (!strip) return
+      const item = active.getBoundingClientRect()
+      const viewport = strip.getBoundingClientRect()
+      if (item.left < viewport.left) strip.scrollLeft += item.left - viewport.left
+      else if (item.right > viewport.right) strip.scrollLeft += item.right - viewport.right
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [tab])
 
   const moveTab = useCallback(
     (event, index) => {
@@ -222,7 +239,7 @@ export default function App() {
 
       <nav className="hub-nav" aria-label="Explore Chicago Sports">
         <button aria-pressed={!globalTab} onClick={() => selectTab('schedule')}>Clubhouse</button>
-        {GLOBAL_TABS.map((entry) => <button key={entry.id} aria-pressed={tab === entry.id} onClick={() => selectTab(entry.id)}>{entry.label}{entry.id === 'mygames' ? <span className="nav-count">{Object.keys(fan.tickets).length}</span> : null}</button>)}
+        {GLOBAL_TABS.map((entry) => <button key={entry.id} aria-label={entry.label} aria-describedby={entry.id === 'mygames' ? 'ticket-count' : undefined} aria-pressed={tab === entry.id} onClick={() => selectTab(entry.id)}><span className="nav-label-short">{entry.id === 'tonight' ? 'Tonight' : entry.id === 'mygames' ? 'My Games' : 'Arcade'}</span>{entry.id === 'mygames' ? <><span className="nav-count" aria-hidden="true">{Object.keys(fan.tickets).length}</span><span id="ticket-count" className="sr-only">{Object.keys(fan.tickets).length} saved tickets</span></> : null}</button>)}
       </nav>
       {fan.storageError ? <div className="note" role="status">Device storage is unavailable. Tickets, trivia progress and preferences will last only for this visit.</div> : null}
 
@@ -242,18 +259,6 @@ export default function App() {
           <div>
             <div className="hero-kicker">{team.leagueLabel} · Chicago</div>
             <h2>{team.short}</h2>
-            <div className="hero-venue"><Venue name={team.venue} /></div>
-          </div>
-        </div>
-
-        <div className="team-glance">
-          <div>
-            <span>Club snapshot</span>
-            <strong>{fan.spoiler ? 'Record hidden' : teamOverview?.record ?? 'Loading current record…'}</strong>
-          </div>
-          <div>
-            <span>Next up</span>
-            <strong>{fan.spoiler ? teamOverview?.safeNext ?? 'Schedule updating…' : teamOverview?.next ?? 'Schedule updating…'}</strong>
           </div>
         </div>
 
@@ -276,21 +281,27 @@ export default function App() {
             </select>
           </div>
 
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={includeOlder}
-              onChange={(e) => setIncludeOlder(e.target.checked)}
-            />
-            Explore back to {team.oldestSeason}
-          </label>
         </div>
 
-        {archiveCoverage ? (
-          <div className="coverage" role="status">
-            <strong>{archiveCoverage.label}</strong> {archiveCoverage.detail}
+        <details className="club-details">
+          <summary>Club details &amp; archive options</summary>
+          <div className="team-glance">
+            <div>
+              <span>Current club snapshot</span>
+              <strong>{fan.spoiler ? 'Record hidden' : teamOverview?.record ?? 'Loading current record…'}</strong>
+            </div>
+            <div>
+              <span>Next up</span>
+              <strong>{fan.spoiler ? teamOverview?.safeNext ?? 'Schedule updating…' : teamOverview?.next ?? 'Schedule updating…'}</strong>
+            </div>
           </div>
-        ) : null}
+          <div className="club-detail-venue"><span>Venue</span><Venue name={team.venue} /></div>
+          <label className="check club-older-seasons">
+            <input type="checkbox" checked={includeOlder} onChange={(e) => setIncludeOlder(e.target.checked)} />
+            Explore back to {team.oldestSeason}
+          </label>
+          {archiveCoverage ? <div className="coverage" role="status"><strong>{archiveCoverage.label}</strong> {archiveCoverage.detail}</div> : null}
+        </details>
       </section> : null}
 
       {!globalTab ? <div className="tabs" role="tablist" aria-label="Team views">

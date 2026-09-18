@@ -1,0 +1,116 @@
+/* Compact navigation and club identity, with room for content to grow. */
+.app { width: min(100%, 1180px); padding: 10px 20px 48px; }
+.app::before { border-top: 4px solid var(--team); box-shadow: none; }
+.masthead { display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 16px; min-height: 52px; margin: 0; padding: 4px 0 6px; border-bottom: 1px solid var(--rule); }
+.masthead .brand { gap: 10px; }
+.masthead .brand-mark { width: 34px; height: 34px; border: 2px solid var(--line); box-shadow: 2px 2px var(--line); font-size: 10px; }
+.masthead .eyebrow { color: var(--muted); font: 11px/1.3 var(--font-body); letter-spacing: .06em; }
+.masthead h1 { margin: 4px 0 0; font-size: 16px; line-height: 1.4; text-shadow: none; }
+.masthead p { flex: 1; max-width: 270px; margin: 0 0 0 auto; padding: 0; border: 0; font-size: 12px; color: var(--muted); }
+.masthead .spoiler-switch { flex: none; min-height: 44px; display: inline-flex; align-items: center; gap: 7px; margin: 0; padding: 0; border: 0; background: transparent; font-size: 12px; white-space: nowrap; }
+.hub-nav { display: flex; flex-wrap: nowrap; gap: 18px; overflow-x: auto; min-height: 44px; align-items: stretch; margin: 0 0 8px; }
+.hub-nav button { min-height: 44px; flex: 0 0 auto; padding: 8px 0; border: 0; border-bottom: 2px solid transparent; background: transparent; box-shadow: none; font: 600 14px/1.4 var(--font-body); color: var(--muted); }
+.hub-nav button[aria-pressed='true'] { background: transparent; color: var(--team); border-bottom-color: var(--team); transform: none; }
+.nav-count { font: 12px var(--font-body); border-radius: 3px; }
+.today-board { display: flex; align-items: stretch; gap: 0; margin: 0 0 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--scoreboard); box-shadow: none; color: #fff; }
+.today-head { flex: 0 0 235px; display: grid; grid-template-columns: 1fr auto; align-content: center; gap: 3px 8px; padding: 6px 12px; border: 0; border-right: 1px solid #465166; background: transparent; }
+.today-head > div:first-child { grid-column: 1 / -1; }
+.today-head > div:first-child > span, .today-head > p { display: none; }
+.today-head h2 { margin: 0; color: #fff; font: 650 14px/1.4 var(--font-body); text-transform: none; }
+.today-days { grid-column: 1 / -1; display: flex; gap: 3px; margin: 0; }
+.today-days button, .today-retry { min-height: 44px; padding: 7px 8px; border: 1px solid transparent; border-radius: 3px; background: transparent; color: #d4dce9; font: 12px/1.3 var(--font-body); }
+.today-days button[aria-pressed='true'] { background: #35435b; border-color: #69788e; color: #fff; }
+.today-days button:hover, .today-retry:hover { background: #35435b; color: #fff; }
+.today-status { min-height: 0; margin: 0; color: #c1ccdc; font: 11px/1.4 var(--font-body); }
+.today-retry { margin: 0; border-color: #69788e; }
+.today-games { flex: 1; min-width: 0; display: flex; align-items: stretch; overflow-x: auto; gap: 8px; padding: 8px; scrollbar-width: thin; scrollbar-color: #63748c transparent; }
+.today-games button { flex: 0 0 195px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: center; gap: 2px 8px; min-height: 68px; padding: 8px 10px; border: 1px solid #465166; border-radius: 3px; background: #1c2a42; font-family: var(--font-body); }
+.today-games button > span { grid-column: 1; color: #c1ccdc; font-size: 11px; }
+.today-games strong { grid-column: 1; margin: 0; color: #fff; font-size: 15px; line-height: 1.25; }
+.today-games em { grid-column: 1; color: #d4dce9; font-size: 12px; line-height: 1.4; }
+.today-games b { grid-column: 2; grid-row: 1 / 4; align-self: center; margin: 0; font: 750 18px var(--font-body); }
+.today-empty { margin: 0; font-size: 13px; }
+.teams { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; padding: 0; margin: 0 0 8px; }
+.team-card { min-width: 0; min-height: 48px; padding: 7px 10px; overflow: visible; border: 1px solid var(--rule); border-radius: 3px; background: var(--panel); box-shadow: none; transition: background-color 120ms; }
+.team-card::before { display: none; }
+.team-card:hover { transform: none; box-shadow: none; border-color: var(--card-color); }
+.team-card[aria-pressed='true'] { transform: none; border-color: var(--card-color); background: color-mix(in srgb, var(--card-color) 8%, var(--panel)); box-shadow: inset 0 -3px var(--card-color); }
+.team-card .tc-head { justify-content: center; align-items: center; gap: 8px; }
+.team-card { display: grid; place-items: center; }
+.team-card img { width: 26px; height: 26px; }
+.team-card .tc-name { color: var(--card-color); font: 650 14px/1.3 var(--font-body); }
+.tc-name-short { display: none; }
+.team-card .tc-league, .team-card .tc-meta, .team-card .tc-next { display: none; }
+.team-dashboard { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0 16px; margin: 0 0 8px; padding: 10px 14px 0; border: 1px solid var(--rule); border-left: 4px solid var(--team); border-radius: 3px; background: var(--panel); box-shadow: none; }
+.team-dashboard::before { display: none; }
+.team-identity { min-width: 0; padding: 0; gap: 10px; background: transparent; }
+.team-crest { width: 38px; height: 38px; padding: 3px; border: 0; box-shadow: none; background: transparent; font-size: 10px; }
+.team-identity h2 { margin: 0; font: 750 23px/1.2 var(--font-body); letter-spacing: -.025em; }
+.team-identity .hero-kicker { font: 11px/1.5 var(--font-body); letter-spacing: .04em; }
+.season-controls { grid-column: auto; display: block; padding: 0; background: transparent; }
+.season-controls .field { display: flex; align-items: center; gap: 8px; }
+.season-controls .field label { margin: 0; color: var(--muted); font: 12px var(--font-body); text-transform: none; }
+.season-controls select { width: auto; min-width: 94px; min-height: 44px; font: 16px var(--font-body); }
+.club-details { grid-column: 1 / -1; margin-top: 6px; border-top: 1px solid var(--rule); }
+.club-details > summary { display: flex; align-items: center; gap: 8px; min-height: 44px; color: var(--muted); font: 13px/1.4 var(--font-body); list-style: none; }
+.club-details > summary::-webkit-details-marker { display: none; }
+.club-details > summary::before { content: ''; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform 120ms; }
+.club-details[open] > summary::before { transform: rotate(45deg); }
+.team-glance { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 10px 0 16px; border: 0; background: transparent; box-shadow: none; }
+.team-glance > div { min-width: 0; padding: 0; border: 0; background: transparent; }
+.team-glance span, .club-detail-venue > span { margin: 0 0 4px; color: var(--muted); font: 12px/1.5 var(--font-body); text-transform: none; }
+.team-glance strong { color: var(--text); font: 600 14px/1.5 var(--font-body); }
+.club-detail-venue { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding-bottom: 4px; }
+.club-older-seasons { display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: 13px; }
+.club-details .coverage { margin: 0 -14px 0 -14px; border-top: 1px solid var(--rule); font-size: 13px; }
+.tabs { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 0; width: 100%; margin: 0 0 8px; padding: 0; border: 0; border-bottom: 1px solid var(--rule); background: transparent; box-shadow: none; scrollbar-width: thin; }
+.tabs button { flex: 0 0 auto; min-height: 46px; min-width: 0; padding: 10px 12px; border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: transparent; box-shadow: none; color: var(--muted); font: 600 14px/1.35 var(--font-body); text-transform: none; white-space: nowrap; }
+.tabs button:hover { background: var(--panel-2); }
+.tabs button[aria-selected='true'] { transform: none; border-color: var(--team); background: transparent; color: var(--team); }
+.tabs .tab-label-full { display: inline; }
+.tabs .tab-label-short { display: none; }
+#main-content { width: 100%; margin: 0; }
+.foot { margin: 28px auto 0; font-size: 12px; }
+@media (max-width: 800px) {
+  .masthead p { display: none; }
+}
+@media (max-width: 600px) {
+  .app { padding: 8px 10px 36px; }
+  .masthead { gap: 10px; min-height: 62px; }
+  .masthead .eyebrow { display: none; }
+  .masthead h1 { font-size: 12px; max-width: 160px; }
+  .masthead .brand-mark { width: 30px; height: 30px; font-size: 9px; }
+  .masthead .spoiler-switch { white-space: normal; max-width: 92px; font-size: 12px; }
+  .spoiler-switch input { flex: none; }
+  .hub-nav { justify-content: space-between; gap: 10px; }
+  .hub-nav button { font-size: 13px; }
+  .today-board { display: block; }
+  .today-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; padding: 0 8px; border: 0; border-bottom: 1px solid #465166; }
+  .today-head > div:first-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .today-days { flex: none; }
+  .today-days button { padding-inline: 6px; }
+  .today-status { flex: 1; min-width: 72px; text-align: right; font-size: 10px; }
+  .today-retry { margin: 4px 0; }
+  .today-games { gap: 6px; padding: 6px; }
+  .today-games button { flex-basis: 185px; }
+  .teams { gap: 4px; }
+  .team-card { min-width: 0; padding: 6px 2px; min-height: 58px; }
+  .team-card .tc-head { flex-direction: column; gap: 4px; }
+  .team-card img { width: 23px; height: 23px; }
+  .team-card .tc-name { font-size: 12px; }
+  .tc-name-full { display: none; }
+  .tc-name-short { display: inline; }
+  .team-dashboard { gap: 0 8px; padding: 8px 10px 0; }
+  .team-identity { gap: 4px; }
+  .team-crest { width: 30px; height: 34px; }
+  .team-identity h2 { font-size: 20px; }
+  .team-identity .hero-kicker { font-size: 10px; }
+  .season-controls .field { display: grid; gap: 2px; }
+  .season-controls .field label { font-size: 11px; }
+  .season-controls select { min-width: 88px; padding: 6px 8px; }
+  .club-details > summary { font-size: 12px; }
+  .team-glance { grid-template-columns: 1fr; gap: 14px; }
+  .club-details .coverage { margin-inline: -10px; }
+  .tabs { margin-bottom: 8px; }
+  .tabs button { padding-inline: 11px; }
+}

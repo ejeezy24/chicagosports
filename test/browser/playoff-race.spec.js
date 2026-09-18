@@ -29,6 +29,12 @@ test('current playoff race renders standings, remaining games, and spoilers on m
   await expect(page.locator('.playoff-race > .race-group').first().getByText('Clinched Division', { exact: true })).toBeVisible()
   await expect(page.locator('.table-wrap').first()).toHaveCSS('overflow-x', /auto|scroll/)
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390)
+  const tableFits = await page.locator('.playoff-race > .race-group .table-wrap').first().evaluate(wrapper => {
+    const bounds = document.querySelector('.playoff-race').getBoundingClientRect()
+    const box = wrapper.getBoundingClientRect()
+    return box.left >= bounds.left && box.right <= bounds.right && wrapper.scrollWidth > wrapper.clientWidth
+  })
+  expect(tableFits).toBe(true)
 })
 
 test('historical and partial race states remain honest', async ({ page }) => {

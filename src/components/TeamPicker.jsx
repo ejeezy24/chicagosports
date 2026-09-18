@@ -2,10 +2,7 @@ import { TEAMS, accentFor } from '../teams.js'
 import { useFan } from '../FanContext.jsx'
 import { formatDate, formatTime } from '../format.js'
 
-/**
- * Doubles as the nav and the "what's happening today" strip: each card carries
- * the team's live record and next game, pulled from the team endpoint.
- */
+/** Compact club navigation; current record and next game live in Club details. */
 export function TeamPicker({ selected, onSelect, overview }) {
   const fan = useFan()
   return (
@@ -18,12 +15,13 @@ export function TeamPicker({ selected, onSelect, overview }) {
             className="team-card"
             style={{ '--card-color': accentFor(team) }}
             aria-pressed={selected === team.key}
+            aria-label={team.name}
             onClick={() => onSelect(team.key)}
           >
             <div className="tc-head">
               {info?.logo ? <img src={info.logo} alt="" loading="lazy" /> : null}
               <div>
-                <div className="tc-name">{team.short}</div>
+                <div className="tc-name"><span className="tc-name-full">{team.short}</span><span className="tc-name-short">{team.key === 'whitesox' ? 'Sox' : team.key === 'blackhawks' ? 'Hawks' : team.short}</span></div>
                 <div className="tc-league">{team.leagueLabel}</div>
               </div>
             </div>

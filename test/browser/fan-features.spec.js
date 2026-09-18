@@ -25,6 +25,7 @@ for (const width of [390, 1280]) {
     await feeds(page)
     await page.setViewportSize({ width, height: 900 })
     await page.goto('/?team=cubs&season=2016&tab=schedule')
+    await page.locator('.schedule-tools-disclosure > summary').click()
     await page.getByRole('combobox', { name: /^Opponent/ }).selectOption('4')
     await expect(page.locator('.g-opp .name').first()).toContainText('White Sox')
     await page.getByRole('combobox', { name: /^Location/ }).selectOption('home')

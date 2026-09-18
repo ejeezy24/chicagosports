@@ -1596,10 +1596,10 @@ test('every club accent stays legible on the page background', () => {
       const accent = accentFor(t, backdrop)
       assert.match(accent, /^#[0-9a-f]{6}$/, `${t.key} accent should be a hex colour`)
       const c = ratio(accent, backdrop)
-      // 3:1 is the WCAG AA floor for large / bold text, which is all this
-      // colour is used for — headings, the masthead, and thin rules.
+      // Team accents are also used for small labels and links, so require
+      // normal-text AA contrast against each background.
       assert.ok(
-        c >= 3,
+        c >= 4.5,
         `${t.key} accent ${accent} only reaches ${c.toFixed(2)}:1 on ${backdrop}`,
       )
     }
