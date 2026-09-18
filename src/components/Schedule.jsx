@@ -366,7 +366,7 @@ const GameRow = memo(function GameRow({ game, team, selected, onGameChange }) {
     <div className="game-actions schedule-ticket-actions"><button className="text-button" aria-expanded={editing} onClick={() => setEditing((value) => !value)}>{fan.tickets[ticketKey] ? '★ Edit ticket' : '+ Collect ticket'}</button></div>
     {editing ? <TicketEditor team={team} game={game} onClose={() => setEditing(false)} /> : null}
     {open ? (
-      <div id={panelId}>
+      <div id={panelId} className="game-detail-reveal">
         <div className="game-detail-tools">
           <span>Shareable game details</span>
           <button className="game-link-button" onClick={copyGameLink} aria-label={copyLabel}>

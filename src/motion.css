@@ -1,0 +1,123 @@
+/* Motion layer: visual emphasis only. Layout, focus rings, and touch targets
+   stay owned by the shell/component styles. This file is loaded last. */
+
+.team-card,
+.panel,
+.panel-head,
+.live-scoreboard,
+.today-board {
+  position: relative;
+}
+
+/* The accent is static so it remains useful in reduced-motion mode too. */
+.team-card[aria-pressed='true']::after,
+.panel-head::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  background: linear-gradient(135deg, transparent 0 42%, color-mix(in srgb, var(--team) 22%, transparent) 42% 58%, transparent 58%);
+}
+.team-card[aria-pressed='true']::after { inset: 0 0 0 auto; width: 30%; }
+.team-card[aria-pressed='true'] {
+  background: var(--card-color);
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--card-color) 72%, #000);
+}
+.team-card[aria-pressed='true'] .tc-name { color: #fff; }
+.team-card[aria-pressed='true'] img { padding: 2px; background: #fff; border-radius: 50%; }
+.team-card[aria-pressed='true']::after { background: linear-gradient(135deg, transparent 0 40%, #ffffff20 40% 60%, transparent 60%); }
+.panel-head::after { inset: 0 0 0 auto; width: 74px; opacity: .8; }
+.live-scoreboard, .today-board { background-image: linear-gradient(120deg, color-mix(in srgb, var(--team) 14%, var(--scoreboard)) 0%, var(--scoreboard) 58%, color-mix(in srgb, var(--team) 28%, var(--scoreboard)) 100%); }
+
+/* Selected tabs use an animated accent strip without moving or resizing the
+   tab button itself. */
+.tabs button { position: relative; }
+.tabs button::after {
+  content: '';
+  position: absolute;
+  inset: auto 10px 0;
+  height: 3px;
+  background: var(--team);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+.tabs button[aria-selected='true']::after { transform: scaleX(1); }
+.tabs button[aria-selected='true'] { border-bottom-color: transparent; background: color-mix(in srgb, var(--team) 6%, transparent); }
+
+/* Native details keep their semantic height/overflow behavior. */
+.club-details > summary,
+.schedule-tools-disclosure > summary,
+.schedule-calendar-help > summary,
+.live-plays > summary,
+.race-more > summary { position: relative; }
+.schedule-tools-disclosure > summary,
+.schedule-calendar-help > summary,
+.live-plays > summary,
+.race-more > summary { list-style: none; }
+.schedule-tools-disclosure > summary,
+.schedule-calendar-help > summary,
+.race-more > summary { padding-right: 24px; }
+.schedule-tools-disclosure > summary::-webkit-details-marker,
+.schedule-calendar-help > summary::-webkit-details-marker,
+.live-plays > summary::-webkit-details-marker,
+.race-more > summary::-webkit-details-marker { display: none; }
+.schedule-tools-disclosure > summary::after,
+.schedule-calendar-help > summary::after,
+.race-more > summary::after {
+  content: '';
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-65%) rotate(-45deg);
+}
+.club-details > summary::before { transition: none; }
+.club-details[open] > summary::before,
+.schedule-tools-disclosure[open] > summary::after,
+.schedule-calendar-help[open] > summary::after,
+.race-more[open] > summary::after { transform: translateY(-35%) rotate(45deg); }
+.club-details[open] > summary::before { transform: rotate(45deg); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .tabs button::after { transition: transform 220ms ease; }
+  .club-details > summary::before,
+  .schedule-tools-disclosure > summary::after,
+  .schedule-calendar-help > summary::after,
+  .live-plays > summary::before,
+  .race-more > summary::after { transition: transform 200ms ease; }
+
+  .club-details[open] > :not(summary),
+  .schedule-tools-disclosure[open] > :not(summary),
+  .schedule-calendar-help[open] > :not(summary),
+  .live-plays[open] > :not(summary),
+  .race-more[open] > :not(summary),
+  .game-detail-reveal,
+  .ticket-editor { animation: panel-reveal 220ms ease backwards; }
+
+  @keyframes panel-reveal {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .team-card:hover,
+    .panel:hover,
+    .tabs button:hover,
+    .game:hover,
+    .game-card:hover,
+    .live-scoreboard:hover {
+      border-color: color-mix(in srgb, var(--team) 62%, var(--rule));
+      box-shadow: 0 3px 12px color-mix(in srgb, var(--team) 14%, transparent);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

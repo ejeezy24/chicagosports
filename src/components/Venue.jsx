@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { IMAGERY_CREDIT, venueByName } from '../venues.js'
 import wrigleyAerial from '../assets/venues/wrigley.jpg'
 import rateAerial from '../assets/venues/rate.jpg'
@@ -29,12 +30,13 @@ const AERIALS = {
 function Popover({ venue, id, anchor }) {
   const ref = useRef(null)
 
-  // Fixed positioning, placed by hand: schedule rows clip their overflow, so an
-  // absolutely-positioned card would be cut off by its own row.
+  // Render against the viewport so animated panels and clipped schedule rows
+  // cannot change the popover's positioning context.
   useLayoutEffect(() => {
     const el = ref.current
     const trigger = anchor.current
     if (!el || !trigger) return
+    el.style.setProperty('--team', getComputedStyle(trigger).getPropertyValue('--team'))
 
     const t = trigger.getBoundingClientRect()
     const { width, height } = el.getBoundingClientRect()
@@ -52,7 +54,7 @@ function Popover({ venue, id, anchor }) {
     el.style.visibility = 'visible'
   }, [anchor])
 
-  return (
+  return createPortal(
     <div className="venue-pop" id={id} role="tooltip" ref={ref}>
       <div className="v-stage">
         <div className="v-window">
@@ -77,7 +79,7 @@ function Popover({ venue, id, anchor }) {
         </ul>
         <div className="v-credit">{IMAGERY_CREDIT}</div>
       </div>
-    </div>
+    </div>, document.body,
   )
 }
 

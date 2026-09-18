@@ -12,6 +12,7 @@ import './fan.css'
 import './design-system.css'
 import './shell-layout.css'
 import './panel-layout.css'
+import './motion.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

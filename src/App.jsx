@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getTeam } from './api.js'
 import { TEAMS, accentFor, teamByKey } from './teams.js'
 import { clampSeason, seasonLabel, seasonOptions } from './seasons.js'
@@ -29,6 +29,7 @@ import { Rivalry } from './components/Rivalry.jsx'
 import { Showdown } from './components/Showdown.jsx'
 import { SeasonHeatmap } from './components/SeasonHeatmap.jsx'
 import { useFan, SpoilerGate } from './FanContext.jsx'
+import { useInteractionMotion } from './useInteractionMotion.js'
 
 
 const store = {
@@ -207,6 +208,8 @@ export default function App() {
   const archiveCoverage = coverageNote(team, season)
   const teamOverview = overviewState.data?.[team.key]
   const globalTab = GLOBAL_TABS.find((entry) => entry.id === tab)
+  const panelRef = useRef(null)
+  useInteractionMotion(panelRef, `${team.key}:${season}:${tab}:${archiveView}:${seasonType}`)
 
   useEffect(() => {
     const meta = canonicalState({ team, season, tab, archiveView, seasonType, gameId, includeOlder }, window.location.origin)
@@ -324,7 +327,7 @@ export default function App() {
       </div> : null}
 
       <main id="main-content">
-        <div id={`panel-${tab}`} role={globalTab ? undefined : 'tabpanel'} aria-labelledby={globalTab ? undefined : `tab-${tab}`} tabIndex={-1}>
+        <div ref={panelRef} id={`panel-${tab}`} role={globalTab ? undefined : 'tabpanel'} aria-labelledby={globalTab ? undefined : `tab-${tab}`} tabIndex={-1}>
         {tab === 'greatgames' && <GreatGames key={team.key + season} team={team} season={season} />}
         {tab === 'playoffrace' && <PlayoffRace key={team.key + season} team={team} season={season} />}
         {tab === 'tonight' && <Tonight />}
