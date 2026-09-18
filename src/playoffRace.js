@@ -56,7 +56,8 @@ const canceled = /cancel(?:led|ed)|postponed|suspended|abandoned/i
 
 export function normalizeRemaining(payload, team, requestedSeason) {
   const receivedSeason = seasonValue(payload)
-  if (receivedSeason !== null && Number(receivedSeason) !== Number(requestedSeason)) return { seasonMismatch: true, games: [], receivedSeason }
+  const eventSeasons = (payload?.events ?? []).map((event) => numberOrNull(event.season?.year)).filter((year) => year !== null)
+  if (eventSeasons.some((year) => year !== Number(requestedSeason)) || (!eventSeasons.length && receivedSeason !== null && Number(receivedSeason) !== Number(requestedSeason))) return { seasonMismatch: true, games: [], receivedSeason }
   const games = []
   for (const event of payload?.events ?? []) {
     const competition = event.competitions?.[0] ?? {}

@@ -165,7 +165,12 @@ export async function loadFinderSchedules(team, seasons, { fresh = false, getSch
         const payload = await getScheduleImpl(team, season, 2, { fresh })
         const normalized = finderGames(payload, team)
         const returnedSeason = number(payload?.season?.year ?? payload?.season?.value)
-        if (returnedSeason !== null && returnedSeason !== season) throw new Error(`Schedule returned season ${returnedSeason} for ${season}`)
+        // ESPN's schedule header can say the current year while each event is
+        // correctly scoped to the requested archive season. Event years win.
+        const eventSeasons = normalized.map((game) => number(game.season)).filter((year) => year !== null)
+        if (eventSeasons.some((year) => year !== season) || (!eventSeasons.length && returnedSeason !== null && returnedSeason !== season)) {
+          throw new Error(`Schedule returned games from another season for ${season}`)
+        }
         const valid = normalized.filter((game) => game.completed && number(game.ourScore) !== null && number(game.theirScore) !== null)
         if (valid.some((game) => game.season !== null && game.season !== season)) throw new Error(`Schedule contains games from another season (${season})`)
         games.push(...valid)

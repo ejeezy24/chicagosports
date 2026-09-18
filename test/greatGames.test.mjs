@@ -81,3 +81,13 @@ test('infers a seven-inning walk-off only from the final canonical lead-changing
   assert.equal(walkoffEvidence({...payload,format:undefined},candidate,baseball),'unknown')
   assert.equal(walkoffEvidence(payload,{...candidate,completed:false},baseball),'no')
 })
+
+test('archive event years override ESPN current-year schedule headers, but wrong games are rejected', async () => {
+ const payload={season:{year:2026},events:[{id:'archive',date:'2016-06-01T00:00:00Z',season:{year:2016},status:{type:{state:'post',completed:true}},competitions:[{competitors:[{team:{id:'3'},homeAway:'home',winner:true,score:'24'},{team:{id:'9'},homeAway:'away',score:'0'}]}]}]}
+ const valid=await loadFinderSchedules(team,[2016],{getScheduleImpl:async()=>payload})
+ assert.equal(valid.games.length,1)
+ assert.equal(valid.failures.length,0)
+ const wrong=await loadFinderSchedules(team,[2015],{getScheduleImpl:async()=>payload})
+ assert.equal(wrong.games.length,0)
+ assert.equal(wrong.failures.length,1)
+})

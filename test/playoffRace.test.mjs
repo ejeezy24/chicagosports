@@ -51,3 +51,9 @@ test('real MLB conference feed preserves seed, leader-relative games back, and s
  assert.equal(cubs.stats.find(s=>s.key==='gamesBehind').value,10)
  assert.equal(normalizeRaceStandings(payload,2016).groups.length,0)
 })
+
+test('historical remaining schedule trusts event seasons over the current-year header',()=>{
+ const payload={season:{year:2026},events:[{season:{year:2016},status:{type:{state:'post',completed:true}}}]}
+ assert.equal(normalizeRemaining(payload,team,2016).seasonMismatch,false)
+ assert.equal(normalizeRemaining(payload,team,2015).seasonMismatch,true)
+})
