@@ -1,6 +1,7 @@
 import { TEAMS, accentFor } from '../teams.js'
 import { useFan } from '../FanContext.jsx'
 import { formatDate, formatTime } from '../format.js'
+import { ClubLogo } from './ClubLogo.jsx'
 
 /** Compact club navigation; current record and next game live in Club details. */
 export function TeamPicker({ selected, onSelect, overview }) {
@@ -19,7 +20,7 @@ export function TeamPicker({ selected, onSelect, overview }) {
             onClick={() => onSelect(team.key)}
           >
             <div className="tc-head">
-              {info?.logo ? <img src={info.logo} alt="" loading="lazy" /> : null}
+              <ClubLogo src={info?.logo} abbreviation={team.abbr} />
               <div>
                 <div className="tc-name"><span className="tc-name-full">{team.short}</span><span className="tc-name-short">{team.key === 'whitesox' ? 'Sox' : team.key === 'blackhawks' ? 'Hawks' : team.short}</span></div>
                 <div className="tc-league">{team.leagueLabel}</div>

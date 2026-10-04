@@ -38,8 +38,7 @@ export function useInteractionMotion(panelRef, navigationKey) {
       if (!target?.closest('.app') || target.disabled || target.getAttribute('aria-disabled') === 'true') return
       animate(state, target, [
         { scale: '1' },
-        { scale: '.96', offset: .35 },
-        { scale: '1.015', offset: .72 },
+        { scale: '.985', offset: .4 },
         { scale: '1' },
       ], 'cs-press')
     }
@@ -60,7 +59,7 @@ export function useInteractionMotion(panelRef, navigationKey) {
     const state = motion.current
     const panel = panelRef.current
     animate(state, panel, [
-      { translate: '0 12px', opacity: .55 },
+      { translate: '0 6px', opacity: .7 },
       { translate: 'none', opacity: 1 },
     ], 'cs-panel')
     return () => { state.byElement.get(panel)?.cancel() }

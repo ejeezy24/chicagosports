@@ -15,8 +15,10 @@ async function feeds(page) {
     return route.fulfill({ json: {} })
   })
 }
-for (const [width, mainLimit, gameLimit] of [[1440, 450, 750], [390, 600, 950], [320, 650, 1050]]) {
-  test(`compact layout reaches the games and keeps controls readable at ${width}px`, async ({ page }, testInfo) => {
+// The editorial desktop header gives club identity more space; phone budgets
+// remain unchanged so the redesign still reaches the games without a long scroll.
+for (const [width, mainLimit, gameLimit] of [[1440, 600, 950], [390, 600, 950], [320, 650, 1050]]) {
+  test(`editorial layout reaches the games and keeps controls readable at ${width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 1000 })
     await feeds(page)
     await page.goto('/?team=cubs&season=2016&tab=schedule')

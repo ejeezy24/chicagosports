@@ -34,6 +34,8 @@ import { News } from './components/News.jsx'
 import { LineupBuilder } from './components/LineupBuilder.jsx'
 import { TimeMachine } from './components/TimeMachine.jsx'
 import { StadiumMap } from './components/StadiumMap.jsx'
+import { SportsIcon } from './components/SportsIcon.jsx'
+import { ClubLogo } from './components/ClubLogo.jsx'
 
 
 const store = {
@@ -236,7 +238,14 @@ export default function App() {
       <a className="skip-link" href="#main-content">Skip to content</a>
       <header className="masthead">
         <div className="brand">
-          <div className="brand-mark" aria-hidden="true">CS</div>
+          <div className="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 72 18" role="presentation">
+              <polygon points="8,0 10,5 16,4 12,9 15,14 9,12 6,18 5,12 0,11 4,8 2,3 7,5" />
+              <polygon points="26,0 28,5 34,4 30,9 33,14 27,12 24,18 23,12 18,11 22,8 20,3 25,5" />
+              <polygon points="44,0 46,5 52,4 48,9 51,14 45,12 42,18 41,12 36,11 40,8 38,3 43,5" />
+              <polygon points="62,0 64,5 70,4 66,9 69,14 63,12 60,18 59,12 54,11 58,8 56,3 61,5" />
+            </svg>
+          </div>
           <div>
             <div className="eyebrow">All Chicago. Every season.</div>
             <h1>
@@ -249,8 +258,8 @@ export default function App() {
       </header>
 
       <nav className="hub-nav" aria-label="Explore Chicago Sports">
-        <button aria-pressed={!globalTab} onClick={() => selectTab('schedule')}>Clubhouse</button>
-        {GLOBAL_TABS.map((entry) => <button key={entry.id} aria-label={entry.label} aria-describedby={entry.id === 'mygames' ? 'ticket-count' : undefined} aria-pressed={tab === entry.id} onClick={() => selectTab(entry.id)}><span className="nav-label-short">{entry.id === 'tonight' ? 'Tonight' : entry.id === 'mygames' ? 'My Games' : entry.id === 'arcade' ? 'Arcade' : entry.id === 'stadiums' ? 'Stadiums' : entry.label}</span>{entry.id === 'mygames' ? <><span className="nav-count" aria-hidden="true">{Object.keys(fan.tickets).length}</span><span id="ticket-count" className="sr-only">{Object.keys(fan.tickets).length} saved tickets</span></> : null}</button>)}
+        <button aria-pressed={!globalTab} onClick={() => selectTab('schedule')}><SportsIcon name="clubhouse" />Clubhouse</button>
+        {GLOBAL_TABS.map((entry) => <button key={entry.id} aria-label={entry.label} aria-describedby={entry.id === 'mygames' ? 'ticket-count' : undefined} aria-pressed={tab === entry.id} onClick={() => selectTab(entry.id)}><SportsIcon name={entry.id === 'timemachine' ? 'timemachine' : entry.id} /><span className="nav-label-short">{entry.id === 'tonight' ? 'Tonight' : entry.id === 'mygames' ? 'My Games' : entry.id === 'arcade' ? 'Arcade' : entry.id === 'stadiums' ? 'Stadiums' : entry.label}</span>{entry.id === 'mygames' ? <><span className="nav-count" aria-hidden="true">{Object.keys(fan.tickets).length}</span><span id="ticket-count" className="sr-only">{Object.keys(fan.tickets).length} saved tickets</span></> : null}</button>)}
       </nav>
       {fan.storageError ? <div className="note" role="status">Device storage is unavailable. Tickets, trivia progress and preferences will last only for this visit.</div> : null}
 
@@ -265,13 +274,19 @@ export default function App() {
       {!globalTab ? <section className="team-dashboard" aria-label={`${team.name} season controls`}>
         <div className="team-identity">
           <div className="team-crest" aria-hidden="true">
-            {teamOverview?.logo ? <img src={teamOverview.logo} alt="" /> : team.abbr}
+            <ClubLogo src={teamOverview?.logo} abbreviation={team.abbr} />
           </div>
-          <div>
+          <div className="hero-copy">
             <div className="hero-kicker">{team.leagueLabel} · Chicago</div>
             <h2>{team.short}</h2>
+            <p className="hero-subline">{team.venue}</p>
           </div>
         </div>
+        <div className="hero-art" aria-hidden="true"><span className="hero-watermark">{team.abbr}</span><svg viewBox="0 0 360 150" fill="none" role="presentation">
+          <path className="skyline-line" d="M10 127h340M26 127V94h18v33m7 0V73h24v54m8 0V90h16v37m9 0V48h25v79m7 0V79h18v48m8 0V61h28v66m8 0V88h16v39m8 0V36h22v91m7 0V75h16v52m8 0V96h23v31m8 0V68h16v59m8 0V87h19v40" stroke="currentColor" strokeWidth="2" />
+          <path className="hero-fieldline" d="M188 126c2-17 16-28 34-28s32 11 34 28m-56 0c4-9 12-15 22-15s18 6 22 15m-30 0v-8m16 8v-8" stroke="currentColor" strokeWidth="1.5" />
+          <circle className="hero-sun" cx="266" cy="38" r="19" fill="currentColor" />
+        </svg></div>
 
         <div className="season-controls">
           <div className="field">
@@ -313,7 +328,21 @@ export default function App() {
           </label>
           {archiveCoverage ? <div className="coverage" role="status"><strong>{archiveCoverage.label}</strong> {archiveCoverage.detail}</div> : null}
         </details>
-      </section> : null}
+      </section> : <section className="team-dashboard city-dashboard" aria-label="Chicago citywide view">
+        <div className="team-identity">
+          <div className="city-mark" aria-hidden="true">CHI</div>
+          <div className="hero-copy">
+            <div className="hero-kicker">THE CITY, IN SEASON · CHICAGO</div>
+            <h2>{globalTab.label}</h2>
+            <p className="hero-subline">Scores and stories from all five Chicago clubs.</p>
+          </div>
+        </div>
+        <div className="hero-art" aria-hidden="true"><span className="hero-watermark">CHI</span><svg viewBox="0 0 360 150" fill="none" role="presentation">
+          <path className="skyline-line" d="M10 127h340M26 127V94h18v33m7 0V73h24v54m8 0V90h16v37m9 0V48h25v79m7 0V79h18v48m8 0V61h28v66m8 0V88h16v39m8 0V36h22v91m7 0V75h16v52m8 0V96h23v31m8 0V68h16v59m8 0V87h19v40" stroke="currentColor" strokeWidth="2" />
+          <path className="hero-fieldline" d="M188 126c2-17 16-28 34-28s32 11 34 28m-56 0c4-9 12-15 22-15s18 6 22 15m-30 0v-8m16 8v-8" stroke="currentColor" strokeWidth="1.5" />
+          <circle className="hero-sun" cx="266" cy="38" r="19" fill="currentColor" />
+        </svg></div>
+      </section>}
 
       {!globalTab ? <div className="tabs" role="tablist" aria-label="Team views">
         {TABS.map((t, index) => (

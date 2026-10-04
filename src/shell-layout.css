@@ -1,116 +1,235 @@
-/* Compact navigation and club identity, with room for content to grow. */
-.app { width: min(100%, 1180px); padding: 10px 20px 48px; }
-.app::before { border-top: 4px solid var(--team); box-shadow: none; }
-.masthead { display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 16px; min-height: 52px; margin: 0; padding: 4px 0 6px; border-bottom: 1px solid var(--rule); }
-.masthead .brand { gap: 10px; }
-.masthead .brand-mark { width: 34px; height: 34px; border: 2px solid var(--line); box-shadow: 2px 2px var(--line); font-size: 10px; }
-.masthead .eyebrow { color: var(--muted); font: 11px/1.3 var(--font-body); letter-spacing: .06em; }
-.masthead h1 { margin: 4px 0 0; font-size: 16px; line-height: 1.4; text-shadow: none; }
-.masthead p { flex: 1; max-width: 270px; margin: 0 0 0 auto; padding: 0; border: 0; font-size: 12px; color: var(--muted); }
-.masthead .spoiler-switch { flex: none; min-height: 44px; display: inline-flex; align-items: center; gap: 7px; margin: 0; padding: 0; border: 0; background: transparent; font-size: 12px; white-space: nowrap; }
-.hub-nav { display: flex; flex-wrap: nowrap; gap: 18px; overflow-x: auto; min-height: 44px; align-items: stretch; margin: 0 0 8px; }
-.hub-nav button { min-height: 44px; flex: 0 0 auto; padding: 8px 0; border: 0; border-bottom: 2px solid transparent; background: transparent; box-shadow: none; font: 600 14px/1.4 var(--font-body); color: var(--muted); }
-.hub-nav button[aria-pressed='true'] { background: transparent; color: var(--team); border-bottom-color: var(--team); transform: none; }
-.nav-count { font: 12px var(--font-body); border-radius: 3px; }
-.today-board { display: flex; align-items: stretch; gap: 0; margin: 0 0 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--scoreboard); box-shadow: none; color: #fff; }
-.today-head { flex: 0 0 235px; display: grid; grid-template-columns: 1fr auto; align-content: center; gap: 3px 8px; padding: 6px 12px; border: 0; border-right: 1px solid #465166; background: transparent; }
+/* Chicago After Dark: a dark broadcast frame around bright editorial panels. */
+.app {
+  --shell-bg: #0b1423;
+  --shell-surface: #142238;
+  --shell-text: #f5f7fb;
+  --shell-muted: #afbed1;
+  --shell-rule: #ffffff20;
+  width: min(100%, 1240px);
+  padding: 8px 24px 48px;
+  color: var(--shell-text);
+  background: linear-gradient(180deg, #101c2e 0, var(--shell-bg) 300px);
+}
+.app::before { display: none; }
+.foot .methodology summary, .foot .methodology p, .foot a { color: var(--shell-muted); }
+.club-logo { position: relative; display: grid; place-items: center; width: 100%; height: 100%; }
+.club-logo > span { font: 700 11px/1 var(--font-body); color: #fff; }
+.club-logo > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; }
+.club-logo[data-ready='true'] > img { opacity: 1; }
+.club-logo[data-ready='true'] > span { visibility: hidden; }
+.team-card .tc-head > .club-logo { flex: none; width: 26px; height: 26px; }
+.skip-link { z-index: 30; }
+.masthead {
+  display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between;
+  gap: 18px; min-height: 50px; margin: 0; padding: 3px 0 8px;
+  border-bottom: 1px solid var(--shell-rule); color: var(--shell-text);
+}
+.masthead .brand { gap: 11px; }
+.masthead .brand-mark {
+  width: 36px; height: 36px; border: 1px solid #ffffff45; border-radius: 11px;
+  background: linear-gradient(145deg, var(--team-primary), var(--team-secondary));
+  box-shadow: inset 0 0 0 4px #0b142380; color: #fff; font: 750 11px/1 var(--font-body);
+}
+.masthead .brand-mark svg { width: 28px; height: 8px; fill: #fff; }
+.masthead .eyebrow { color: var(--shell-muted); font: 600 10px/1.3 var(--font-body); letter-spacing: .15em; text-transform: uppercase; }
+.masthead h1 { margin: 2px 0 0; color: var(--shell-text); font: 700 26px/.95 var(--font-display); letter-spacing: .015em; text-shadow: none; }
+.masthead h1 span { color: #fff; }
+.masthead p { flex: 1; max-width: 350px; margin: 0 0 0 auto; padding: 0; border: 0; color: var(--shell-muted); font-size: 12px; }
+.masthead .spoiler-switch {
+  flex: none; min-height: 40px; display: inline-flex; align-items: center; gap: 8px;
+  margin: 0; padding: 0 12px; border: 1px solid var(--shell-rule); border-radius: 999px;
+  background: #ffffff08; color: var(--shell-text); font-size: 12px; white-space: nowrap;
+}
+.hub-nav {
+  display: flex; flex-wrap: nowrap; gap: 24px; overflow-x: auto; min-height: 44px;
+  align-items: stretch; margin: 0 0 6px; border-bottom: 1px solid var(--shell-rule);
+  scrollbar-width: thin; scrollbar-color: #52627b transparent;
+}
+.hub-nav button {
+  min-height: 44px; position: relative; flex: 0 0 auto; display: inline-flex; align-items: center;
+  gap: 7px; padding: 8px 1px; border: 0; border-bottom: 2px solid transparent;
+  border-radius: 0; background: transparent; box-shadow: none; color: var(--shell-muted);
+  font: 600 14px/1.3 var(--font-body); white-space: nowrap;
+}
+.hub-nav button svg { opacity: .78; }
+.hub-nav button[aria-pressed='true'] { background: transparent; color: #fff; border-bottom-color: color-mix(in srgb, var(--team-primary) 48%, #fff); transform: none; }
+.hub-nav button[aria-pressed='true'] svg { color: color-mix(in srgb, var(--team-primary) 48%, #fff); opacity: 1; }
+.hub-nav button:hover { color: #fff; background: #ffffff08; box-shadow: none; transform: none; }
+.nav-count { display: inline-grid; min-width: 18px; height: 18px; place-items: center; padding: 0 4px; border-radius: 999px; background: #ffffff18; color: #fff; font: 700 10px var(--font-body); }
+.app > .note { border-color: var(--shell-rule); border-radius: 12px; background: var(--shell-surface); color: var(--shell-text); }
+
+/* City scoreboard: compact and legible beneath the global navigation. */
+.today-board {
+  display: flex; align-items: stretch; gap: 0; margin: 0 0 7px;
+  border: 1px solid var(--shell-rule); border-radius: 14px;
+  background: linear-gradient(110deg, #182943, #111d30 70%); box-shadow: 0 10px 24px #02081124; color: #fff;
+}
+.today-head {
+  flex: 0 0 230px; display: grid; grid-template-columns: 1fr auto; align-content: center;
+  gap: 3px 8px; padding: 8px 14px; border: 0; border-right: 1px solid var(--shell-rule); background: transparent;
+}
 .today-head > div:first-child { grid-column: 1 / -1; }
-.today-head > div:first-child > span, .today-head > p { display: none; }
-.today-head h2 { margin: 0; color: #fff; font: 650 14px/1.4 var(--font-body); text-transform: none; }
-.today-days { grid-column: 1 / -1; display: flex; gap: 3px; margin: 0; }
-.today-days button, .today-retry { min-height: 44px; padding: 7px 8px; border: 1px solid transparent; border-radius: 3px; background: transparent; color: #d4dce9; font: 12px/1.3 var(--font-body); }
-.today-days button[aria-pressed='true'] { background: #35435b; border-color: #69788e; color: #fff; }
-.today-days button:hover, .today-retry:hover { background: #35435b; color: #fff; }
-.today-status { min-height: 0; margin: 0; color: #c1ccdc; font: 11px/1.4 var(--font-body); }
-.today-retry { margin: 0; border-color: #69788e; }
-.today-games { flex: 1; min-width: 0; display: flex; align-items: stretch; overflow-x: auto; gap: 8px; padding: 8px; scrollbar-width: thin; scrollbar-color: #63748c transparent; }
-.today-games button { flex: 0 0 195px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: center; gap: 2px 8px; min-height: 68px; padding: 8px 10px; border: 1px solid #465166; border-radius: 3px; background: #1c2a42; font-family: var(--font-body); }
-.today-games button > span { grid-column: 1; color: #c1ccdc; font-size: 11px; }
-.today-games strong { grid-column: 1; margin: 0; color: #fff; font-size: 15px; line-height: 1.25; }
-.today-games em { grid-column: 1; color: #d4dce9; font-size: 12px; line-height: 1.4; }
-.today-games b { grid-column: 2; grid-row: 1 / 4; align-self: center; margin: 0; font: 750 18px var(--font-body); }
-.today-empty { margin: 0; font-size: 13px; }
-.teams { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; padding: 0; margin: 0 0 8px; }
-.team-card { min-width: 0; min-height: 48px; padding: 7px 10px; overflow: visible; border: 1px solid var(--rule); border-radius: 3px; background: var(--panel); box-shadow: none; transition: background-color 120ms; }
+.today-head > div:first-child > span { display: block; color: #91a6c2; font: 700 9px/1.2 var(--font-body); letter-spacing: .15em; text-transform: uppercase; }
+.today-head > p { display: none; }
+.today-head h2 { margin: 1px 0 0; color: #fff; font: 700 19px/1.1 var(--font-display); letter-spacing: .02em; text-transform: uppercase; }
+.today-days { grid-column: 1 / -1; display: flex; gap: 4px; margin: 3px 0 0; }
+.today-days button, .today-retry {
+  min-height: 44px; padding: 6px 9px; border: 1px solid transparent; border-radius: 8px;
+  background: transparent; color: #bac8da; font: 600 11px/1.3 var(--font-body);
+}
+.today-days button[aria-pressed='true'] { border-color: #ffffff22; background: #ffffff12; color: #fff; }
+.today-days button:hover, .today-retry:hover { background: #ffffff14; color: #fff; }
+.today-status { min-height: 0; margin: 0; color: #91a6c2; font: 10px/1.4 var(--font-body); }
+.today-retry { margin: 0; border-color: #ffffff26; }
+.today-games { flex: 1; min-width: 0; display: flex; align-items: stretch; overflow-x: auto; gap: 7px; padding: 8px; scrollbar-width: thin; scrollbar-color: #63748c transparent; }
+.today-games button {
+  flex: 0 0 185px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: center;
+  gap: 2px 8px; min-height: 66px; padding: 7px 10px; border: 1px solid #ffffff1c;
+  border-radius: 10px; background: #0c1728aa; font-family: var(--font-body);
+}
+.today-games button:hover { border-color: color-mix(in srgb, var(--card-color) 70%, white); background: #1b2a40; }
+.today-games button > span { grid-column: 1; color: #aabbd0; font-size: 10px; }
+.today-games button > span.is-live { color: #ff8179; }
+.today-games strong { grid-column: 1; margin: 0; color: #fff; font-size: 13px; line-height: 1.25; }
+.today-games em { grid-column: 1; color: #b9c7d9; font-size: 11px; line-height: 1.35; }
+.today-games b { grid-column: 2; grid-row: 1 / 4; align-self: center; margin: 0; color: #fff; font: 750 17px var(--font-body); }
+.today-empty { margin: 0; color: var(--shell-muted); font-size: 12px; }
+
+/* Five club selectors have a dark neutral resting state and a clear club-color active state. */
+.teams { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; padding: 0; margin: 0 0 7px; }
+.team-card {
+  min-width: 0; min-height: 48px; padding: 6px 10px; overflow: hidden; position: relative;
+  border: 1px solid var(--shell-rule); border-radius: 12px; background: var(--shell-surface);
+  box-shadow: inset 0 1px #ffffff08; color: #fff; transition: background-color 120ms, border-color 120ms;
+}
 .team-card::before { display: none; }
-.team-card:hover { transform: none; box-shadow: none; border-color: var(--card-color); }
-.team-card[aria-pressed='true'] { transform: none; border-color: var(--card-color); background: color-mix(in srgb, var(--card-color) 8%, var(--panel)); box-shadow: inset 0 -3px var(--card-color); }
+.team-card:hover { transform: none; box-shadow: inset 0 1px #ffffff0d; border-color: color-mix(in srgb, var(--card-color) 60%, #ffffff55); }
+.team-card[aria-pressed='true'] { transform: none; border-color: color-mix(in srgb, var(--card-color) 82%, white); background: linear-gradient(115deg, color-mix(in srgb, var(--card-color) 82%, #132238), color-mix(in srgb, var(--card-color) 55%, #142238)); box-shadow: inset 0 0 0 1px #ffffff20, 0 5px 14px #02081135; }
 .team-card .tc-head { justify-content: center; align-items: center; gap: 8px; }
 .team-card { display: grid; place-items: center; }
-.team-card img { width: 26px; height: 26px; }
-.team-card .tc-name { color: var(--card-color); font: 650 14px/1.3 var(--font-body); }
+.team-card img { width: 25px; height: 25px; object-fit: contain; filter: none; }
+.team-card .tc-name { color: #f0f4fb; font: 650 13px/1.25 var(--font-body); }
+.team-card[aria-pressed='true'] .tc-name { color: white; }
+.team-card .tc-league { color: #9dafc7; font: 700 9px/1.15 var(--font-body); letter-spacing: .09em; }
+.team-card .tc-meta, .team-card .tc-next { display: none; }
 .tc-name-short { display: none; }
-.team-card .tc-league, .team-card .tc-meta, .team-card .tc-next { display: none; }
-.team-dashboard { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0 16px; margin: 0 0 8px; padding: 10px 14px 0; border: 1px solid var(--rule); border-left: 4px solid var(--team); border-radius: 3px; background: var(--panel); box-shadow: none; }
-.team-dashboard::before { display: none; }
-.team-identity { min-width: 0; padding: 0; gap: 10px; background: transparent; }
-.team-crest { width: 38px; height: 38px; padding: 3px; border: 0; box-shadow: none; background: transparent; font-size: 10px; }
-.team-identity h2 { margin: 0; font: 750 23px/1.2 var(--font-body); letter-spacing: -.025em; }
-.team-identity .hero-kicker { font: 11px/1.5 var(--font-body); letter-spacing: .04em; }
-.season-controls { grid-column: auto; display: block; padding: 0; background: transparent; }
+
+/* The club/city hero gives each route a strong editorial identity. */
+.team-dashboard {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 31%); grid-template-rows: 1fr auto;
+  align-items: center; position: relative; isolation: isolate; overflow: hidden; gap: 0 14px;
+  min-height: 170px; margin: 0 0 7px; padding: 14px 24px 0;
+  border: 1px solid #ffffff19; border-radius: 18px;
+  background: radial-gradient(ellipse at 18% 12%, color-mix(in srgb, var(--team-primary) 42%, transparent), transparent 43%), radial-gradient(ellipse at 88% 28%, color-mix(in srgb, var(--team-secondary) 40%, transparent), transparent 42%), linear-gradient(112deg, #17263c 0%, #111d30 58%, #0d1829 100%);
+  box-shadow: 0 16px 36px #02081135, inset 0 1px #ffffff12;
+}
+.team-dashboard::before { content: ''; position: absolute; z-index: -1; right: -24px; top: -75px; width: 340px; height: 210px; border-radius: 50%; background: color-mix(in srgb, var(--team-primary) 12%, transparent); filter: blur(28px); }
+.team-identity { min-width: 0; display: flex; align-items: center; gap: 18px; padding: 0; background: transparent; }
+.team-crest, .city-mark {
+  flex: none; display: grid; place-items: center; width: 70px; height: 70px; padding: 6px;
+  border: 1px solid #ffffff20; border-radius: 18px; background: #ffffff0a;
+  box-shadow: 0 10px 28px #02081124; color: #fff; font: 700 15px var(--font-display);
+}
+.team-crest img { width: 100%; height: 100%; object-fit: contain; filter: none; }
+.hero-copy { min-width: 0; }
+.team-identity .hero-kicker { margin: 0 0 3px; color: #bac8da; font: 700 10px/1.4 var(--font-body); letter-spacing: .15em; text-transform: uppercase; }
+.team-identity .hero-kicker span { padding: 0 4px; color: var(--team-primary); }
+.team-identity h2 { margin: 0; color: #fff; font: 700 clamp(42px, 5vw, 64px)/.95 var(--font-display); letter-spacing: -.015em; text-transform: uppercase; text-shadow: 0 4px 20px #02081155; }
+.hero-subline { margin: 6px 0 0; color: #afbed1; font: 500 12px/1.4 var(--font-body); }
+.hero-art { position: absolute; right: 2%; bottom: 38px; z-index: -1; display: flex; align-items: flex-end; justify-content: flex-end; width: 38%; height: 130px; min-width: 0; color: color-mix(in srgb, var(--team-primary) 48%, #f5f7fb); opacity: .78; }
+.hero-watermark { position: absolute; right: 22%; bottom: 20px; color: #ffffff14; font: 700 clamp(70px, 10vw, 136px)/.8 var(--font-display); letter-spacing: -.035em; white-space: nowrap; }
+.hero-art svg { display: block; width: min(100%, 340px); height: 124px; overflow: visible; }
+.hero-art .skyline-line { opacity: .72; }
+.hero-art .hero-fieldline { opacity: .5; }
+.hero-art .hero-sun { opacity: .12; }
+.season-controls { grid-column: 2; grid-row: 1; display: block; align-self: center; justify-self: end; padding: 0; background: transparent; }
 .season-controls .field { display: flex; align-items: center; gap: 8px; }
-.season-controls .field label { margin: 0; color: var(--muted); font: 12px var(--font-body); text-transform: none; }
-.season-controls select { width: auto; min-width: 94px; min-height: 44px; font: 16px var(--font-body); }
-.club-details { grid-column: 1 / -1; margin-top: 6px; border-top: 1px solid var(--rule); }
-.club-details > summary { display: flex; align-items: center; gap: 8px; min-height: 44px; color: var(--muted); font: 13px/1.4 var(--font-body); list-style: none; }
+.season-controls .field label { margin: 0; color: #91a6c2; font: 700 9px/1.3 var(--font-body); letter-spacing: .13em; text-transform: uppercase; }
+.season-controls select { width: auto; min-width: 100px; min-height: 44px; padding: 6px 32px 6px 11px; border: 1px solid #ffffff24; border-radius: 9px; background: #ffffff10; color: #fff; font: 600 16px var(--font-body); }
+.season-controls select option { color: #101827; }
+.club-details { grid-column: 1 / -1; grid-row: 2; z-index: 1; margin-top: 0; border-top: 1px solid #ffffff19; }
+.club-details > summary { display: flex; align-items: center; gap: 8px; min-height: 44px; color: #aebdd0; font: 600 12px/1.4 var(--font-body); list-style: none; }
 .club-details > summary::-webkit-details-marker { display: none; }
-.club-details > summary::before { content: ''; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform 120ms; }
-.club-details[open] > summary::before { transform: rotate(45deg); }
-.team-glance { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 10px 0 16px; border: 0; background: transparent; box-shadow: none; }
+.club-details > summary::before { content: ''; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); }
+.team-glance { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 6px 0 14px; border: 0; background: transparent; box-shadow: none; }
 .team-glance > div { min-width: 0; padding: 0; border: 0; background: transparent; }
-.team-glance span, .club-detail-venue > span { margin: 0 0 4px; color: var(--muted); font: 12px/1.5 var(--font-body); text-transform: none; }
-.team-glance strong { color: var(--text); font: 600 14px/1.5 var(--font-body); }
-.club-detail-venue { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding-bottom: 4px; }
-.club-older-seasons { display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: 13px; }
-.club-details .coverage { margin: 0 -14px 0 -14px; border-top: 1px solid var(--rule); font-size: 13px; }
-.tabs { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 0; width: 100%; margin: 0 0 8px; padding: 0; border: 0; border-bottom: 1px solid var(--rule); background: transparent; box-shadow: none; scrollbar-width: thin; }
-.tabs button { flex: 0 0 auto; min-height: 46px; min-width: 0; padding: 10px 12px; border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: transparent; box-shadow: none; color: var(--muted); font: 600 14px/1.35 var(--font-body); text-transform: none; white-space: nowrap; }
-.tabs button:hover { background: var(--panel-2); }
-.tabs button[aria-selected='true'] { transform: none; border-color: var(--team); background: transparent; color: var(--team); }
+.team-glance span, .club-detail-venue > span { margin: 0 0 4px; color: #91a6c2; font: 700 9px/1.4 var(--font-body); letter-spacing: .1em; text-transform: uppercase; }
+.team-glance strong { color: #f5f7fb; font: 600 12px/1.45 var(--font-body); }
+.club-detail-venue { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding-bottom: 5px; color: #f5f7fb; }
+.club-older-seasons { display: flex; align-items: center; gap: 8px; min-height: 38px; color: #e5ebf4; font-size: 12px; }
+.club-details .coverage { margin: 0 -24px; border-top: 1px solid #ffffff19; background: #ffffff06; color: #dce4ef; font-size: 12px; }
+.city-dashboard { min-height: 145px; padding-bottom: 17px; grid-template-rows: 1fr; }
+.city-dashboard .team-identity { grid-column: 1 / 2; }
+.city-dashboard .city-mark { color: var(--team-primary); font: 700 19px var(--font-display); }
+
+/* Keep the 13-view club navigation discoverable and keyboard-friendly. */
+.tabs { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 1px; width: 100%; margin: 0 0 8px; padding: 0 3px; border: 1px solid var(--shell-rule); border-radius: 12px; background: #101d30; box-shadow: inset 0 1px #ffffff08; scrollbar-width: thin; scrollbar-color: #52627b transparent; }
+.tabs button { flex: 0 0 auto; min-height: 44px; min-width: 0; padding: 9px 12px; border: 0; border-bottom: 2px solid transparent; border-radius: 8px 8px 0 0; background: transparent; box-shadow: none; color: #aebdd0; font: 600 12px/1.35 var(--font-body); text-transform: none; white-space: nowrap; }
+.tabs button:hover { background: #ffffff0a; color: #fff; }
+.tabs button[aria-selected='true'] { transform: none; border-color: transparent; border-bottom-color: color-mix(in srgb, var(--team-primary) 48%, #fff); background: color-mix(in srgb, var(--team-primary) 13%, transparent); color: #fff; }
 .tabs .tab-label-full { display: inline; }
 .tabs .tab-label-short { display: none; }
-#main-content { width: 100%; margin: 0; }
-.foot { margin: 28px auto 0; font-size: 12px; }
+#main-content { width: 100%; margin: 0; color: var(--text); }
+.foot { margin: 24px auto 0; padding-top: 15px; border-top: 1px solid var(--shell-rule); color: #91a0b5; font-size: 11px; }
+.methodology { color: #bac8da; }
+
 @media (max-width: 800px) {
   .masthead p { display: none; }
+  .team-dashboard { grid-template-columns: minmax(0, 1fr) auto; min-height: 160px; }
+  .hero-art svg { height: 116px; }
 }
 @media (max-width: 600px) {
-  .app { padding: 8px 10px 36px; }
-  .masthead { gap: 10px; min-height: 62px; }
+  .app { padding: 8px 10px 32px; }
+  .masthead { gap: 8px; min-height: 54px; padding-bottom: 8px; }
   .masthead .eyebrow { display: none; }
-  .masthead h1 { font-size: 12px; max-width: 160px; }
-  .masthead .brand-mark { width: 30px; height: 30px; font-size: 9px; }
-  .masthead .spoiler-switch { white-space: normal; max-width: 92px; font-size: 12px; }
+  .masthead h1 { font-size: 20px; max-width: 160px; }
+  .masthead .brand-mark { width: 31px; height: 31px; border-radius: 9px; font-size: 10px; }
+  .masthead .spoiler-switch { min-height: 38px; white-space: normal; max-width: 114px; padding-inline: 9px; font-size: 11px; }
   .spoiler-switch input { flex: none; }
-  .hub-nav { justify-content: space-between; gap: 10px; }
-  .hub-nav button { font-size: 13px; }
-  .today-board { display: block; }
-  .today-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; padding: 0 8px; border: 0; border-bottom: 1px solid #465166; }
+  .hub-nav { gap: 16px; min-height: 45px; margin-bottom: 8px; }
+  .hub-nav button { min-height: 45px; font-size: 12px; }
+  .today-board { display: block; margin-bottom: 8px; }
+  .today-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; padding: 0 9px; border: 0; border-bottom: 1px solid var(--shell-rule); }
   .today-head > div:first-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-  .today-days { flex: none; }
-  .today-days button { padding-inline: 6px; }
-  .today-status { flex: 1; min-width: 72px; text-align: right; font-size: 10px; }
-  .today-retry { margin: 4px 0; }
+  .today-days { flex: none; margin: 0; }
+  .today-days button { min-height: 44px; padding-inline: 7px; }
+  .today-status { flex: 1; min-width: 72px; text-align: right; font-size: 9px; }
+  .today-retry { min-height: 32px; margin: 2px 0; }
   .today-games { gap: 6px; padding: 6px; }
-  .today-games button { flex-basis: 185px; }
-  .teams { gap: 4px; }
-  .team-card { min-width: 0; padding: 6px 2px; min-height: 58px; }
-  .team-card .tc-head { flex-direction: column; gap: 4px; }
-  .team-card img { width: 23px; height: 23px; }
-  .team-card .tc-name { font-size: 12px; }
+  .today-games button { flex-basis: 176px; min-height: 60px; }
+  .teams { gap: 4px; margin-bottom: 8px; }
+  .team-card { min-width: 0; min-height: 55px; padding: 5px 2px; border-radius: 10px; }
+  .team-card .tc-head { flex-direction: column; gap: 3px; }
+  .team-card img { width: 22px; height: 22px; }
+  .team-card .tc-name { font-size: 11px; }
+  .team-card .tc-league { font-size: 8px; }
   .tc-name-full { display: none; }
   .tc-name-short { display: inline; }
-  .team-dashboard { gap: 0 8px; padding: 8px 10px 0; }
-  .team-identity { gap: 4px; }
-  .team-crest { width: 30px; height: 34px; }
-  .team-identity h2 { font-size: 20px; }
-  .team-identity .hero-kicker { font-size: 10px; }
-  .season-controls .field { display: grid; gap: 2px; }
-  .season-controls .field label { font-size: 11px; }
-  .season-controls select { min-width: 88px; padding: 6px 8px; }
-  .club-details > summary { font-size: 12px; }
-  .team-glance { grid-template-columns: 1fr; gap: 14px; }
-  .club-details .coverage { margin-inline: -10px; }
+  .team-dashboard { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 1fr auto; gap: 0 5px; min-height: 140px; padding: 12px 13px 0; border-radius: 15px; margin-bottom: 8px; }
+  .team-identity { gap: 10px; }
+  .team-crest, .city-mark { width: 48px; height: 48px; padding: 4px; border-radius: 13px; font-size: 11px; }
+  .team-identity h2 { font-size: clamp(32px, 9vw, 46px); }
+  .team-identity .hero-kicker { font-size: 8px; letter-spacing: .11em; }
+  .hero-subline { margin-top: 4px; font-size: 10px; }
+  .hero-art { right: 0; bottom: 34px; width: 42%; height: 82px; }
+  .hero-watermark { right: 8%; bottom: 13px; font-size: 68px; }
+  .hero-art svg { width: 128px; height: 82px; }
+  .season-controls { grid-column: 2; grid-row: 1; }
+  .season-controls .field { display: grid; justify-items: end; gap: 3px; }
+  .season-controls .field label { font-size: 8px; }
+  .season-controls select { min-width: 86px; min-height: 44px; padding: 5px 25px 5px 8px; font-size: 16px; }
+  .club-details { grid-column: 1 / -1; }
+  .club-details > summary { min-height: 44px; font-size: 12px; }
+  .team-glance { grid-template-columns: 1fr; gap: 10px; }
+  .club-details .coverage { margin-inline: -13px; }
+  .city-dashboard { min-height: 116px; padding: 12px 13px 12px; grid-template-rows: 1fr; }
+  .city-dashboard .team-identity { grid-column: 1 / 2; }
+  .city-dashboard .hero-art svg { height: 92px; }
   .tabs { margin-bottom: 8px; }
-  .tabs button { padding-inline: 11px; }
+  .tabs button { min-height: 44px; padding-inline: 11px; font-size: 12px; }
+}
+
+@media (max-width: 360px) {
+  /* Club logos remain in the selector; reserve the narrow hero for its name. */
+  .team-dashboard .team-crest { display: none; }
 }

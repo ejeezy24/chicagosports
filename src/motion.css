@@ -1,5 +1,4 @@
-/* Motion layer: visual emphasis only. Layout, focus rings, and touch targets
-   stay owned by the shell/component styles. This file is loaded last. */
+/* Shared disclosure motion. Layout and focus stay owned by component styles. */
 
 .team-card,
 .panel,
@@ -9,39 +8,8 @@
   position: relative;
 }
 
-/* The accent is static so it remains useful in reduced-motion mode too. */
-.team-card[aria-pressed='true']::after,
-.panel-head::after {
-  content: '';
-  position: absolute;
-  pointer-events: none;
-  background: linear-gradient(135deg, transparent 0 42%, color-mix(in srgb, var(--team) 22%, transparent) 42% 58%, transparent 58%);
-}
-.team-card[aria-pressed='true']::after { inset: 0 0 0 auto; width: 30%; }
-.team-card[aria-pressed='true'] {
-  background: var(--card-color);
-  box-shadow: 0 3px 0 color-mix(in srgb, var(--card-color) 72%, #000);
-}
-.team-card[aria-pressed='true'] .tc-name { color: #fff; }
-.team-card[aria-pressed='true'] img { padding: 2px; background: #fff; border-radius: 50%; }
-.team-card[aria-pressed='true']::after { background: linear-gradient(135deg, transparent 0 40%, #ffffff20 40% 60%, transparent 60%); }
-.panel-head::after { inset: 0 0 0 auto; width: 74px; opacity: .8; }
+.panel-head::after { display: none; }
 .live-scoreboard, .today-board { background-image: linear-gradient(120deg, color-mix(in srgb, var(--team) 14%, var(--scoreboard)) 0%, var(--scoreboard) 58%, color-mix(in srgb, var(--team) 28%, var(--scoreboard)) 100%); }
-
-/* Selected tabs use an animated accent strip without moving or resizing the
-   tab button itself. */
-.tabs button { position: relative; }
-.tabs button::after {
-  content: '';
-  position: absolute;
-  inset: auto 10px 0;
-  height: 3px;
-  background: var(--team);
-  transform: scaleX(0);
-  transform-origin: left;
-}
-.tabs button[aria-selected='true']::after { transform: scaleX(1); }
-.tabs button[aria-selected='true'] { border-bottom-color: transparent; background: color-mix(in srgb, var(--team) 6%, transparent); }
 
 /* Native details keep their semantic height/overflow behavior. */
 .club-details > summary,
@@ -81,7 +49,6 @@
 .club-details[open] > summary::before { transform: rotate(45deg); }
 
 @media (prefers-reduced-motion: no-preference) {
-  .tabs button::after { transition: transform 220ms ease; }
   .club-details > summary::before,
   .schedule-tools-disclosure > summary::after,
   .schedule-calendar-help > summary::after,
@@ -103,7 +70,6 @@
 
   @media (hover: hover) and (pointer: fine) {
     .team-card:hover,
-    .panel:hover,
     .tabs button:hover,
     .game:hover,
     .game-card:hover,
